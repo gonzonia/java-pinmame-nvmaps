@@ -19,7 +19,7 @@ public class NVRamScore {
 
   private String label;       // The label/title of the group
 
-  private String playerInitials;
+  private String initials = "";
   private Long score;
   private String scoreText;
 
@@ -30,34 +30,38 @@ public class NVRamScore {
   private final static Map<Locale, DecimalFormat> formats = new HashMap<>();
 
 
-  public NVRamScore(String playerInitials, String scoreText, int position, String title) {
+  public NVRamScore(String initials, String scoreText, int position, String title) {
     this.label = title;
     this.scoreText = scoreText;
     this.position = position;
-    if (!StringUtils.isEmpty(playerInitials)) {
-      this.playerInitials = playerInitials.trim();
+    if (!StringUtils.isEmpty(initials)) {
+      this.initials = initials.trim();
     }
   }
 
-  public NVRamScore(String playerInitials, Long score, int position, String title) {
+  public NVRamScore(String initials, Long score, int position, String title) {
     this.label = title;
     this.score = score;
     this.position = position;
-    if (!StringUtils.isEmpty(playerInitials)) {
-      this.playerInitials = playerInitials.trim();
+    if (!StringUtils.isEmpty(initials)) {
+      this.initials = initials.trim();
     }
   }
 
-  public String getPlayerInitials() {
-    String initials = StringUtils.defaultString(this.playerInitials);
+  public String _getPlayerInitials() {
+    String initials = StringUtils.defaultIfBlank(this.initials, "???");
     while (initials.length() < 3) {
       initials += " ";
     }
     return initials;
   }
 
-  public void setPlayerInitials(String playerInitials) {
-    this.playerInitials = playerInitials;
+  public String getInitials() {
+    return initials;
+  }
+
+  public void setInitials(String initials) {
+    this.initials = initials;
   }
 
   public int getPosition() {
@@ -111,7 +115,7 @@ public class NVRamScore {
   //---------------------------------------------
 
   public boolean hasInitials() {
-    return playerInitials != null;
+    return !StringUtils.isEmpty(initials);
   }
 
   @Override
@@ -121,7 +125,7 @@ public class NVRamScore {
     }
 
     NVRamScore score = (NVRamScore) obj;
-    return score.getPlayerInitials().equalsIgnoreCase(this.getPlayerInitials())
+    return StringUtils.equals(score.getInitials(), this.getInitials())
         && (score.getPosition() == this.getPosition())
         && (score.getScore() != null ? score.getScore().equals(this.getScore()) : true)
         && (score.getScoreText() != null ? score.getScoreText().equals(this.getScoreText()) : true);
@@ -133,15 +137,15 @@ public class NVRamScore {
   }
 
   public String toRaw(Locale loc) {
-    if (rawScore != null) {
-      return rawScore;
-    }
-    // else
-    String disp = (position > 0 ? position + ") " : "") + getPlayerInitials() + "   " + getFormattedScore(loc) + (suffix != null? " " + suffix : "");
+    String disp = (position > 0 ? "#" + position + " ": "") 
+          + StringUtils.rightPad(initials, 3) 
+          + "   " 
+          + getFormattedScore(loc) 
+          + (suffix != null? " " + suffix : "");
     return disp.trim();
   }
 
-  private static final String _patternScore = "((\\d+)\\)\\s)?([ ?/+\\-a-zA-Z0-9]{3,}\\s+)?(\\d\\d?\\d?(?:[.,\\u00a0\\u202f\\ufffd\\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
+  private static final String _patternScore = "(#(\\d+)\\s)?([ ?/+\\-a-zA-Z0-9]{3,}\\s+)?(\\d\\d?\\d?(?:[.,\\u00a0\\u202f\\ufffd\\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
   private static final Pattern patternScoreTitle = Pattern.compile("^" + _patternScore);
 
   public static NVRamScore fromRaw(String line, String title, Locale locale) {

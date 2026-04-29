@@ -22,9 +22,9 @@ public class NVRamParserCompareTool {
     Map<String, String> roms = VPXUtil.getRomnames(mameFolder);
     Map<String, String> clones = VPXUtil.getClones(mameFolder);
 
-    NVRamMapParser parser = new NVRamMapParser(new File("maps"));
-    NVRamPinemhiParser pinemhi = new NVRamPinemhiParser();
-    NVRamSuperhacParser superhac = new NVRamSuperhacParser();
+    NVRamMapParser parser = new NVRamMapParser("resources/maps");
+    NVRamPinemhiParser pinemhi = new NVRamPinemhiParser("resources/pinemhi/");
+    NVRamSuperhacParser superhac = new NVRamSuperhacParser("resources/superhac/roms.json");
 
     File nvramsFolder = new File("nvrams");
 

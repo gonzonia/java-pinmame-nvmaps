@@ -28,10 +28,14 @@ import net.nvrams.mapping.NVRamScore;
 public class NVRamSuperhacParser implements NVRamParser {
   private final static Logger LOG = LoggerFactory.getLogger(NVRamSuperhacParser.class);
 
-  public String superhacFolder = "resources/superhac";
+  private String superhacMaps;
 
   private Map<String, NVRamMap> cacheMapForRom;
 
+
+  public NVRamSuperhacParser(String superhacMaps) {
+    this.superhacMaps = superhacMaps;
+  }
   
   //@Override
   public Set<String> getSupportedRoms() {
@@ -98,9 +102,9 @@ public class NVRamSuperhacParser implements NVRamParser {
   private void ensureCacheMapForRom() throws IOException {
     if (cacheMapForRom == null) {
       LOG.info("Load cache of rom map from classpath resources");
-      File roms  = new File(superhacFolder, "roms.json");
+      File roms  = new File(superhacMaps);
       if (!roms.exists()) {
-          throw new IOException("roms.json not found in classpath");
+          throw new IOException(roms.getAbsolutePath() + " not found in classpath");
       }
 
       try (InputStream in = new FileInputStream(roms)) {

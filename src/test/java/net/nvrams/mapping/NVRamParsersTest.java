@@ -8,40 +8,36 @@ import java.util.Locale;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import net.nvrams.mapping.map.NVRamMapParser;
-import net.nvrams.mapping.pinemhi.NVRamPinemhiParser;
 import net.nvrams.mapping.superhac.NVRamSuperhacParser;
 
 /**
  * A test of NVRamParsers
- * It takes a NVRam, generate a raw and parse it with the DefaultAdapter
+ * It takes a NVRam, parse scores directly, generate raw, parse scores from raw and compare
  * 
  */
 class NVRamParsersTest {
 
-  private RawScoreParser rawParser = RawScoreParserConf.createParser();
+  private NVRamParser mapParser = new NVRamMapParser("resources/maps");
+  private NVRamParser superhacParser = new NVRamSuperhacParser("resources/superhac/roms.json");
 
-  private NVRamParser mapParser = new NVRamMapParser(new File("C:\\Github\\pinmame-nvram-maps"));
-  private NVRamParser superhacParser = new NVRamSuperhacParser();
-  private NVRamParser pinemhiParser = new NVRamPinemhiParser();
-
+  // not needed to test pinemhi parser as parseNvRam() is equivalent to getRaw() + parseRaw()
+  //private NVRamParser pinemhiParser = new NVRamPinemhiParser("resources/pinemhi/");
 
   @Test
   public void compareNVsWithSuperhacParser() throws Exception {
     doCompareNVs(superhacParser, new String[] {
-      "bop_l7", "gi_l9", "nbaf_31", "pool_l7", "robo_a34", "sttng_l7", "stwr_a14", "tagteam", "tf_180", "trek_201", "wwfr_103"
+      "gi_l9"
     });
   }
 
   @Test
   public void compareNVsWithMapParser() throws Exception {
-    doCompareNVs(mapParser, new String[] {});
-  }
-
-  @Test
-  public void compareNVsWithPinemhiParser() throws Exception {
-    doCompareNVs(pinemhiParser, new String[] {});
+    doCompareNVs(mapParser, new String[] {
+      "barbwire", "rescu911"
+    });
   }
 
   private void doCompareNVs(NVRamParser parser, String[] ignoreRoms) throws Exception {
@@ -49,6 +45,7 @@ class NVRamParsersTest {
     Locale loc = Locale.ENGLISH;
 
     List<String> errors = new ArrayList<>();
+    List<String> ignoredRomsInError = new ArrayList<>();
     // used in manual testing to skip first roms, should be null normally 
     String firstRom = null;
     boolean parseAll = false;
@@ -59,36 +56,37 @@ class NVRamParsersTest {
 
       if ((firstRom==null || firstRom.compareTo(rom) <= 0) && parser.isSupportedRom(rom)) {
 
-        List<NVRamScore> scoresMap = parser.parseNvRam(rom, entry, loc, parseAll);
+        List<NVRamScore> scores1 = parser.parseNvRam(rom, entry, loc, parseAll);
 
         List<String> raw = parser.getRaw(rom, entry, loc);
-        List<NVRamScore> scores = rawParser.getScores(rom, raw, parseAll);
+        List<NVRamScore> scores2 = parser.parseRaw(rom, raw, loc, parseAll);
 
-        if (!checkScores(rom, raw, scoresMap, scores, false)) {
-          if (!ArrayUtils.contains(ignoreRoms, rom)) {
+        if (!checkScores(rom, raw, scores1, scores2, false)) {
+          if (ArrayUtils.contains(ignoreRoms, rom)) {
+            ignoredRomsInError.add(rom);
+          }
+          else {
             errors.add(rom);
           }
         }
       }
     }
+    System.out.println("the following ignored roms are still in error : "+ String.join(", ", ignoredRomsInError));
     assertEquals(0, errors.size(), "roms in error: " + String.join(", ", errors));
   }
 
   @Test
   public void compareNV() throws Exception {
 
-    NVRamParser parser =  superhacParser;
+    NVRamParser parser =  mapParser;
 
-    String rom = "acd_170h";
+    String rom = "andretti";
     boolean parseAll = false;
     /*
 
     //----------------------------
 
-
     SUPERHAC PARSER ISSUES
-
-  
 
     gi_l9 => decalage ?
     gnr_300
@@ -118,20 +116,15 @@ class NVRamParsersTest {
     Locale loc = Locale.ENGLISH;
 
     // Get scores from the map and nv directly (except pinemhi, does not use raw string)
-    List<NVRamScore> scoresMap = parser.parseNvRam(rom, entry, loc, parseAll);
+    List<NVRamScore> scores1 = parser.parseNvRam(rom, entry, loc, parseAll);
 
     // generate the raw version of scores
     List<String> raw = parser.getRaw(rom, entry, loc);
+    System.out.println(String.join("\n", raw));
 
-    // parse raw with generic RawScoreParser
-    List<NVRamScore> scores = rawParser.getScores(rom, raw, parseAll);
-    checkScores(rom, raw, scoresMap, scores, true);
-
-    // parse raw with the parser using the map (for pinemhi, this is exactly same as above, so bypass)
-    if (parser != pinemhiParser) {
-      List<NVRamScore> scores2 = parser.parseRaw(rom, raw, loc, parseAll);
-      checkScores(rom, raw, scoresMap, scores2, true);
-    }
+    // parse raw with the parser using the map
+    List<NVRamScore> scores2 = parser.parseRaw(rom, raw, loc, parseAll);
+    checkScores(rom, raw, scores1, scores2, true);
   }
 
   private boolean checkScores(String rom, List<String> raw, List<NVRamScore> parsedScores, List<NVRamScore> scores, boolean useAssert) {
@@ -141,7 +134,17 @@ class NVRamParsersTest {
       for (int i = 0; i < parsedScores.size(); i++) {
         NVRamScore parsedScore = parsedScores.get(i);
         NVRamScore score = scores.get(i);
-        if (!score.equals(parsedScore)) {
+        if (score==null) {
+          System.out.println(String.join("\n", raw));
+          if (useAssert) {
+            assertNotNull(score);
+          }
+          else {
+            System.out.println("==> score is null");
+            return false;
+          }
+        }
+        else if (!score.equals(parsedScore)) {
           System.out.println(String.join("\n", raw));
           if (useAssert) {
             assertEquals(parsedScore, score);

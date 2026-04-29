@@ -34,7 +34,7 @@ public class NVRamToolHexDumpTest {
 
     byte[] bytes = Files.readAllBytes(entry.toPath());
 
-    NVRamMapParser parser = new NVRamMapParser();
+    NVRamMapParser parser = new NVRamMapParser("resources/maps");
     NVRamMap mapJson = new NVRamMap();
     SparseMemory memory = parser.getMemory(mapJson, bytes);
     NVRamToolHexDump dump = new NVRamToolHexDump();

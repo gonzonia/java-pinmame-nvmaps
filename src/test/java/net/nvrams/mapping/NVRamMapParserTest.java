@@ -1,114 +1,68 @@
 package net.nvrams.mapping;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Locale;
-import java.util.Map;
-import java.util.function.BiConsumer;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import org.apache.commons.io.IOUtils;
-import org.junit.jupiter.api.Assertions;
+import java.io.File;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import net.nvrams.mapping.map.NVRamMap;
 import net.nvrams.mapping.map.NVRamMapParser;
-import net.nvrams.mapping.map.NVRamMapping;
-import net.nvrams.mapping.map.SparseMemory;
-import net.nvrams.mapping.tools.NVRamToolDump;
 
 /**
- * Uses test data from https://github.com/tomlogic/py-pinmame-nvmaps
- * This project uses a snapshot version of https://github.com/tomlogic/pinmame-nvram-maps/
  */
-public class NVRamMapParserTest {
+public class NVRamMapParserTest extends BaseParserTest {
 
-  public static final String TEST_ROOT = "https://github.com/tomlogic/py-pinmame-nvmaps/raw/refs/heads/main/test/";
+  private NVRamMapParser parser = new NVRamMapParser("resources/maps");
 
-  /** TODO commented as a bit long... */
-  //@Test
-  public void testAllDump() throws IOException {
-    NVRamMapParser parser = new NVRamMapParser();
-    File indexJson = new File(parser.mapFolder, "index.json");
+  @Test
+  public void testGetScores() throws IOException {
+    String rom = "bcats_l5";
+    File nvram = new File("nvrams", rom + ".nv");
 
-    // optional ROM, to start with, leave null for all
-    String romStart = null; //"t2_l8";
-
-    try (FileInputStream in = new FileInputStream(indexJson)) {
-      ObjectMapper mapper = new ObjectMapper();
-      Map<String, Object> values = mapper.readValue(in, new TypeReference<>() {});
-      for (String key : values.keySet()) {
-        if (romStart == null || key.compareTo(romStart) >= 0) {
-          checkRom(parser, key, false);
-        }
-      }
+    List<NVRamScore> scores = parser.parseNvRam(rom, nvram, Locale.ENGLISH, false);
+    assertEquals(4, scores.size());
+    for (NVRamScore sc : scores) {
+      System.out.println(sc.toString());
     }
   }
 
-  @Test
-  public void testOneDump() throws IOException {
-    NVRamMapParser parser = new NVRamMapParser();
-    checkRom(parser, "t2_l8", true);
-  }
+  //-------------------------------------------------------
+  // Errors :
+  // barbwire, initials are wrongly parsed
+  // rapidfir, no highscore defined in map
+  // sfight2, review the maps
+  // strlt_l1, only one highscores, that is correct when pinemhi generate 4 lines
+  private final static List<String> ignoreList = Arrays.asList("barbwire.nv", 
+      "acd_170.nv",         // offset in names
+      "bguns_la.nv", 
+      "rapidfir.nv", 
+      "rescu911.nv", 
+      "sfight2.nv", 
+      "strlt_l1.nv",
+      "twd_156.nv",          //=> need remapping of initials
+      "vlcno_ax.nv"          // only one score in pinemhi, several in maps
+    );
 
-  private void checkRom(NVRamMapParser parser, String rom, boolean runAssert) throws IOException {
-    System.out.println("checking " + rom + "...");
-    parseNVRam(parser, rom, (mapJson, memory) -> {
-      String result = TEST_ROOT + "expected/" + rom + ".nv.txt";
-      try {
-        parser.download(result, res -> {
-
-          NVRamToolDump tool = new NVRamToolDump();
-          String dump = tool.dump(mapJson, memory, Locale.ENGLISH, true);
-
-          String expected = IOUtils.toString(res, StandardCharsets.UTF_8);
-          // check files
-          if (runAssert) {
-            Assertions.assertEquals(expected, dump);
-          }
-          else {
-            if (!expected.equals(dump)) {
-              System.out.println("=> file are different for " + rom);
-            }
-          }
-
-          return null;
-        });
-      }
-      catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
-    });
-  }
-
-  //-------------------------------------------
+//, , vlcno_ax.nv
 
   @Test
-  public void testDumpPlayerCount() throws IOException {
-    String rom = "bcats_l5";
+  public void testAllFiles() throws Exception {
+    String firstRom = null;
 
-    NVRamMapParser parser = new NVRamMapParser();
-    parseNVRam(parser, rom, (mapJson, memory) -> {
-        NVRamMapping m = mapJson.getGameState().getPlayerCount();
-        String e = m.formatEntry(memory, Locale.ENGLISH);
-        Assertions.assertEquals("0", e);
-    });
+    List<String> failedList = doTestAllFiles(parser, firstRom, ignoreList);
+    assertEquals(0, failedList.size(), "NVRam failed: " + failedList);
   }
 
-  //-------------------------------------------
+  @Test
+  public void testOneFile() throws Exception {
+    String filename = "bop_l8.nv";
 
-  private void parseNVRam(NVRamMapParser parser, String rom, BiConsumer<NVRamMap, SparseMemory> consumer) throws IOException {
-    String testnv = TEST_ROOT + "nvram/" + rom + ".nv";
-    parser.download(testnv, in -> {
-      byte[] bytes = IOUtils.toByteArray(in);
-      NVRamMap mapJson = parser.getMap(rom);
-      SparseMemory memory = parser.getMemory(mapJson, bytes);
-      consumer.accept(mapJson, memory);
-      return null;
-    });
+    int status = doTestOneFile(parser, filename);
+    assertEquals(STATUS_SUCCESS, status);
   }
+
 }

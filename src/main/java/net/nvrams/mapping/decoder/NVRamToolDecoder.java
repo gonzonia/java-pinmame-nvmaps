@@ -42,7 +42,7 @@ public class NVRamToolDecoder {
   // The max number of bytes used for BCD encoding, 8 means 16 digits..., generally it is 5
   private static final int MAX_LENGTH = 8;
 
-  private NVRamMapParser parser = new NVRamMapParser();
+  private NVRamMapParser parser = new NVRamMapParser("resources/maps");
 
 
   File mainFolder = new File("C:/Visual Pinball/VPinMAME/nvram");
@@ -233,12 +233,12 @@ public class NVRamToolDecoder {
       LOG.warn("...checking score \"{}\", position {}", sc, scPos);
 
       // search using INITIALS followed by SCORE pattern
-      SearchResult result = search(bytes, sc.getPlayerInitials(), sc.getScore(), MAX_LENGTH);
+      SearchResult result = search(bytes, sc.getInitials(), sc.getScore(), MAX_LENGTH);
       
       // not found try not contiguous
       if (result == null) {
         // search all position for initials and scores
-        List<Integer> initials = searchString(bytes, sc.getPlayerInitials());
+        List<Integer> initials = searchString(bytes, sc.getInitials());
         List<SearchResult> positions = searchNumber(bytes, sc.getScore(), forcedScoreLength, MAX_LENGTH, true);
         // remove initials positions that conflict with previously selected SearchResult
         CollectionUtils.filter(initials, p -> {
@@ -309,7 +309,7 @@ public class NVRamToolDecoder {
                   // eliminate in initials and positions the ones that are not common
                   for (Iterator<Integer> it = initials.iterator(); it.hasNext();) {
                     Integer pos = it.next();
-                    if (!StringUtils.equals(decodeString(altbytes, pos, altsc.getPlayerInitials().length()), altsc.getPlayerInitials())) {
+                    if (!StringUtils.equals(decodeString(altbytes, pos, altsc.getInitials().length()), altsc.getInitials())) {
                       it.remove();
                     }
                   }
@@ -418,7 +418,7 @@ public class NVRamToolDecoder {
 
     // load pinhemi and parse scores
     Locale locale = Locale.GERMAN;
-    NVRamPinemhiParser pinemhiParser = new NVRamPinemhiParser();
+    NVRamPinemhiParser pinemhiParser = new NVRamPinemhiParser("resources/pinemhi/");
     try {
       if (displayResult) {
         List<String> raw = pinemhiParser.getRaw(rom, nvramFile, locale);

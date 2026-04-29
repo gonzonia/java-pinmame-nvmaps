@@ -12,11 +12,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
@@ -36,7 +38,7 @@ import net.nvrams.mapping.pinemhi.adapters.SkipFirstListScoreAdapter;
 public class NVRamPinemhiParser implements NVRamParser {
   private final static Logger LOG = LoggerFactory.getLogger(NVRamPinemhiParser.class);
   
-  public String pinemhiFolder = "resources/pinemhi";
+  private File pinemhiFolder;
   private File vpPathAdjusted = null;
   private Set<String> supportedNvRams = new HashSet<>();
 
@@ -44,16 +46,17 @@ public class NVRamPinemhiParser implements NVRamParser {
 
   private final List<ScoreNvRamAdapter> adapters = new ArrayList<>();
 
-  public NVRamPinemhiParser() {
-    this(RawScoreParserConf.createParser());
+  public NVRamPinemhiParser(String pinhemiFolder) {
+    this(pinhemiFolder, RawScoreParserConf.createParser());
   }
 
-  public NVRamPinemhiParser(List<String> titles, List<String> romsSkipTitlesCheck) {
-    this(new RawScoreParser(titles, romsSkipTitlesCheck));
+  public NVRamPinemhiParser(String pinhemiFolder, List<String> titles, List<String> romsSkipTitlesCheck) {
+    this(pinhemiFolder, new RawScoreParser(titles, romsSkipTitlesCheck));
   }
 
-  private NVRamPinemhiParser(RawScoreParser rawScoreParser) {
+  private NVRamPinemhiParser(String pinemhiFolder, RawScoreParser rawScoreParser) {
     this.rawScoreParser = rawScoreParser;
+    this.pinemhiFolder = new File(pinemhiFolder);
 
     //adapters.add(new SinglePlayerScoreAdapter("algar_l1.nv", 1));
     //adapters.add(new SinglePlayerScoreAdapter("alienstr.nv", 1));
@@ -93,22 +96,35 @@ public class NVRamPinemhiParser implements NVRamParser {
   @Nullable
   @Override
   public List<NVRamScore> parseNvRam(String rom, @NonNull File nvRam, Locale locale, boolean parseAll) throws IOException {
-    List<String> lines = getLines(nvRam);
-    return rawScoreParser.getScores(rom, lines, parseAll);
+    List<String> lines = getRaw(rom, nvRam, locale);
+    return parseRaw(rom, lines, locale, parseAll);
   }
 
-  @Override
-  public List<String> getRaw(String rom, @NonNull File nvRam, Locale locale) throws IOException {
-    return getLines(nvRam);
-  }
 
   @Override
   public List<NVRamScore> parseRaw(String rom, List<String> lines, Locale locale, boolean parseAll) throws IOException {
-    return rawScoreParser.getScores(rom, lines, parseAll);
+    List<NVRamScore> scores = rawScoreParser.getScores(rom, lines, parseAll);
+
+    // E.g. Transformers has a separate highscore list for Autobots and Decepticons, combines all scores into one list
+    if (StringUtils.equals(rom, "tf_180")) {
+      // keep only first 10 items
+      if (scores.size() > 10) {
+        scores = scores.subList(0, 10);
+      }
+      scores.sort((a, b) -> Long.compare(b.getScore(), a.getScore()));
+      int i = 1;
+      for (NVRamScore score : scores) {
+        score.setPosition(i++);
+      }
+    }
+
+    return filterDuplicates(scores);
   }
 
 
-  private List<String> getLines(File nvRam) throws IOException {
+  @Override
+  public List<String> getRaw(String rom, @NonNull File nvRam, Locale locale) throws IOException {
+
     File originalNVRamFile = nvRam;
     String nvRamFileName = nvRam.getCanonicalFile().getName().toLowerCase();
     String nvRamName = FilenameUtils.getBaseName(nvRamFileName).toLowerCase();
@@ -130,6 +146,20 @@ public class NVRamPinemhiParser implements NVRamParser {
     }
     return lines;
   }
+
+  protected List<NVRamScore> filterDuplicates(List<NVRamScore> scores) {
+    List<NVRamScore> scoreList = new ArrayList<>();
+    for (NVRamScore s : scores) {
+      if (s.getScore() != 0 && StringUtils.isNotEmpty(s.getInitials())) {
+        if (scoreList.stream().anyMatch(score -> Objects.equals(score.getScore(), s.getScore()) && StringUtils.equals(score.getInitials(), s.getInitials()))) {
+          continue;
+        }
+      }
+      scoreList.add(s);
+    }
+    return scoreList;
+  }
+
 
   @Nullable
   public List<String> executePINemHi(@NonNull File originalNVRamFile) throws IOException {

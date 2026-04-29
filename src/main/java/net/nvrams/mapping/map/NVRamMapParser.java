@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,27 +51,27 @@ public class NVRamMapParser implements NVRamParser {
 
   private final static Logger LOG = LoggerFactory.getLogger(NVRamMapParser.class);
 
-  public File mapFolder = new File("resources/maps");
+  private String mapFolder;
 
-  private Map<String, String> _cacheMapForRom;
+  private Map<String, String> cacheMapForRom;
   private Map<String, String> cacheRomNames;
 
   private final Map<String, NVRamMap> cacheNVRamMap = new HashMap<>();
   private final Map<String, NVRamPlatform> cachePlatform = new HashMap<>();
 
-  /**
-   * A service that access maps form resources/maps in this project
-   */
-  public NVRamMapParser() {
-  }
-  
+
   /**
    * A service that uses a local folder to access json maps
    */
-  public NVRamMapParser(File root) {
-    this.mapFolder = root;
+  public NVRamMapParser(String mapFolder) {
+    this.mapFolder = mapFolder;
   }
-  
+
+  public String getMapFolder() {
+    return mapFolder;
+  }
+
+
   //------------
   @Override
   public List<NVRamScore> parseNvRam(String rom, File nvRam, Locale locale, boolean parseAll) throws IOException {
@@ -105,14 +106,23 @@ public class NVRamMapParser implements NVRamParser {
         
         if (parseAll || filter(lbl)) {
           NVRamScore sc = NvRamScoreDecoders.decodeScore(rom, scoreDef, currentLabel, memory);
-          if (allOnes || countByTitle.get(currentLabel) > 1) {
+          if (sc != null && (allOnes || countByTitle.get(currentLabel) > 1)) {
             sc.setPosition(position++);
           }
-          scores.add(sc);
+          if (sc != null && !containsScore(scores, sc)) {
+            scores.add(sc);
+          }
         }
       }
     }
     return scores;
+  }
+
+  private boolean containsScore(List<NVRamScore> scores, NVRamScore sc) {
+    if (sc.getScore() == 0 || StringUtils.isEmpty(sc.getInitials())) {
+      return false;
+    }
+    return scores.stream().anyMatch(score -> Objects.equals(score.getScore(), sc.getScore()) && StringUtils.equals(score.getInitials(), sc.getInitials()));
   }
 
   //------------
@@ -154,7 +164,9 @@ public class NVRamMapParser implements NVRamParser {
         if (parseAll || filter(lbl)) {
           // turn line in score
           NVRamScore sc = NVRamScore.fromRaw(line, currentLabel, locale);
-          scores.add(sc);
+          if (sc != null && !containsScore(scores, sc)) {
+            scores.add(sc);
+          }
         }
       }
     }
@@ -191,13 +203,13 @@ public class NVRamMapParser implements NVRamParser {
 
     List<String> raw = new ArrayList<>();
 
-    getScoresRaw(raw, rom, mapJson.getHighScores(), memory, locale);
-    getScoresRaw(raw, rom, mapJson.getModeChampions(), memory, locale);
+    getScoresRaw(raw, rom, mapJson.getHighScores(), memory, locale, true);
+    getScoresRaw(raw, rom, mapJson.getModeChampions(), memory, locale, false);
 
     return raw;
   }
 
-  private void getScoresRaw(List<String> raw, String rom, List<NVRamScoreMapping> scoreDefs, SparseMemory memory, Locale locale) {
+  private void getScoresRaw(List<String> raw, String rom, List<NVRamScoreMapping> scoreDefs, SparseMemory memory, Locale locale, boolean addPosition) {
     if (scoreDefs != null) {
       // count number of scores, group by section title (label)
       Map<String, Long> countByTitle = scoreDefs.stream()
@@ -222,7 +234,7 @@ public class NVRamMapParser implements NVRamParser {
         }
 
         NVRamScore sc = NvRamScoreDecoders.decodeScore(rom, scoreDef, currentLabel, memory);
-        if (allOnes || countByTitle.get(currentLabel) > 1) {
+        if (addPosition && (allOnes || countByTitle.get(currentLabel) > 1)) {
           sc.setPosition(position++);
         }
         raw.add(sc.toRaw(locale));
@@ -382,7 +394,7 @@ public class NVRamMapParser implements NVRamParser {
   public boolean isSupportedRom(String rom) {
     try {
       ensureCacheMapForRom();
-      return _cacheMapForRom.containsKey(rom);
+      return cacheMapForRom.containsKey(rom);
     }
     catch (IOException ioe) {
       LOG.error("Cannot get supported roms: {}", ioe.getMessage());
@@ -394,7 +406,7 @@ public class NVRamMapParser implements NVRamParser {
   public Set<String> getSupportedRoms() {
     try {
       ensureCacheMapForRom();
-      return _cacheMapForRom.keySet();
+      return cacheMapForRom.keySet();
     }
     catch (IOException ioe) {
       LOG.error("Cannot get supported NVRams: {}", ioe.getMessage());
@@ -403,21 +415,21 @@ public class NVRamMapParser implements NVRamParser {
   }
 
   private void ensureCacheMapForRom() throws IOException {
-    if (_cacheMapForRom == null) {
+    if (cacheMapForRom == null) {
       String indexUrl = "index.json";
       LOG.info("Load cache of rom map from {}", indexUrl);
 
-      _cacheMapForRom  = getStream(indexUrl, in -> {
+      cacheMapForRom  = getStream(indexUrl, in -> {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(in, new TypeReference<Map<String, String>>() {});
       });
-      LOG.info("Rom Cache loaded with {} roms", _cacheMapForRom.size());
+      LOG.info("Rom Cache loaded with {} roms", cacheMapForRom.size());
     }
   }
 
   public String mapPathForRom(String rom) throws IOException {
     ensureCacheMapForRom();
-    return _cacheMapForRom.get(rom);
+    return cacheMapForRom.get(rom);
   }
 
   /**

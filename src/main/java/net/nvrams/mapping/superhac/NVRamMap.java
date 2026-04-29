@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -56,8 +57,10 @@ public class NVRamMap implements NVRamScoreDefinition {
     iterate((scoreEntry, title, sectionEnabled) -> {
         NVRamScore sc = scoreEntry.getScore(data, title, locale, oneBased, zeroByte, zeroIfGte);
         if (sc != null && (parseAll || sc.getScore() != null) && sectionEnabled) {
-          scores.add(sc);
-          return 1;
+           if (!containsScore(scores, sc)) {
+            scores.add(sc);
+            return 1;
+           }
         }
         return 0;
       }, parseAll);
@@ -82,8 +85,10 @@ public class NVRamMap implements NVRamScoreDefinition {
         // read the score
         NVRamScore sc = scoreEntry.getScore(linesIterator, title, locale);
         if (sc != null && (parseAll || sc.getScore() != null) && sectionEnabled) {
-          scores.add(sc);
-          return 1;
+           if (!containsScore(scores, sc)) {
+            scores.add(sc);
+            return 1;
+           }
         }
         return 0;
       }, 
@@ -161,6 +166,13 @@ public class NVRamMap implements NVRamScoreDefinition {
   @FunctionalInterface
   public static interface NVRamScoreDefinitionProcessor {
     public int process(NVRamScoreDefinition scoreDefinition, String title, boolean sectionEnabled) throws IOException;
+  }
+
+  private boolean containsScore(List<NVRamScore> scores, NVRamScore sc) {
+    if (sc.getScore() == 0 || StringUtils.isEmpty(sc.getInitials())) {
+      return false;
+    }
+    return scores.stream().anyMatch(score -> Objects.equals(score.getScore(), sc.getScore()) && StringUtils.equals(score.getInitials(), sc.getInitials()));
   }
 
   /**

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -19,31 +20,38 @@ import net.nvrams.mapping.superhac.NVRamSuperhacParser;
  */
 class NVRamParserCompareTest {
 
-  private NVRamParser pinemhi = new NVRamPinemhiParser();
+  private NVRamParser pinemhi = new NVRamPinemhiParser("resources/pinemhi/");
+  private NVRamParser mapParser = new NVRamMapParser("resources/maps");
+  private NVRamParser superhacParser = new NVRamSuperhacParser("resources/superhac/roms.json");
 
   @Test
   public void compareNVsWithMapParser() throws Exception {
-    doCompareNVs(new NVRamMapParser(), 
+    doCompareNVs(mapParser, 
         new String[] {
-          "bguns_la", "bop_l7", "bop_l8", "rs_l6", "sc_091", "strlt_l1", "sttng_l7", "trek_201",
+          "bguns_la", "rs_l6", "sc_091", "strlt_l1", "sttng_l7", "trek_201",
           //needs updates in maps :
           "acd_170", "andretti", "barbwire", "kissc", "rescu911", "sfight2" , "smanve_100", "twd_156", "vlcno_ax"
         }, new String[] {
-          "abv106", "bsv103", "freddy", "gladiatr"
+          "abv106", "bsv103", "freddy", "gladiatr", "tf_180"
         });
   }
 
-  //@Test
+  @Test
   public void compareNVsWithSuperhacParser() throws Exception {
-    doCompareNVs( new NVRamSuperhacParser(), new String[] {}, new String[] {});
+    doCompareNVs( superhacParser, new String[] {
+      "bop_l7", "dollyptb", "gi_l9", "nbaf_31", "pool_l7", "punchy", "rs_l6", "strlt_l1", "sttng_l7", 
+      "stwr_a14", "tagteam", "tf_180", "trek_201", "wwfr_103"
+    }, new String[] {});
   }
 
   @Test
   public void compareNV() throws Exception {
 
-    NVRamParser parser = new NVRamMapParser();
-    String rom = "monopoly";
+    NVRamParser parser = mapParser;
+    String rom = "whirl_l3";
+    boolean ignorePosition = false;
     boolean parseAll = false;
+
 
     /*
     FIXME NVRamMapParser These roms need to be fixed
@@ -85,7 +93,7 @@ class NVRamParserCompareTest {
     File entry = new File(testFolder, rom + ".nv");
 
     Locale loc = Locale.ENGLISH;
-    doCompare(rom, entry, parser, parseAll, true, false, loc);
+    doCompare(rom, entry, parser, parseAll, true, ignorePosition, loc);
   }
 
   //---------------------
@@ -178,7 +186,7 @@ class NVRamParserCompareTest {
   }
 
   private boolean checkScore(String rom, NVRamScore score1, NVRamScore score2, boolean ignorePosition) {
-    return score1.getPlayerInitials().equalsIgnoreCase(score2.getPlayerInitials())
+    return StringUtils.equals(score1.getInitials(), score2.getInitials())
         && (ignorePosition ? true : score1.getPosition() == score2.getPosition())
         && (score1.getScore() != null ? score1.getScore().equals(score2.getScore()) : true)
         && (score1.getScoreText() != null ? score1.getScoreText().equals(score2.getScoreText()) : true);

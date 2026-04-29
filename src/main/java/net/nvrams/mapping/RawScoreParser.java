@@ -3,7 +3,6 @@ package net.nvrams.mapping;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,22 +85,11 @@ public class RawScoreParser {
       if (currentSuffix != null && currentScore != null) {
         currentScore.setSuffix(currentSuffix);
       }
-
-      // E.g. Transformers has a separate highscore list for Autobots and Decepticons, combines all scores into one list
-      if (StringUtils.equals(rom, "tf_180")) {
-        // keep only first 10 items
-        if (scores.size() > 10) {
-          scores = scores.subList(0, 10);
-        }
-        scores.sort((a, b) -> Long.compare(b.getScore(), a.getScore()));
-        int i = 1;
-        for (NVRamScore score : scores) {
-          //score.setPosition(i++);
-        }
+      // when there is only one score that has been ignored, return it
+      if (scores.isEmpty() && currentScore != null) {
+        scores.add(currentScore);
       }
 
-      //OLE removed
-      //return filterDuplicates(scores);
       return scores;
     }
     catch (Exception e) {
@@ -113,7 +101,7 @@ public class RawScoreParser {
   //-------------------------
 
   private static final String _patternIndex = "(\\d+\\)|#\\d+|\\d+#|\\d+,|\\d+\\.:) +";
-  private static final String _patternScore = "([ ?/+\\-a-zA-Z0-9\u0000]{3,}\\s+)?(?:[-|]?\\s+)?(\\d\\d?\\d?(?:[.,?\u00a0\u202f\ufffd\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
+  private static final String _patternScore = "([ ?/+\\-a-zA-Z0-9\u0000]{3,}\\s+)?(?:[-|$]?\\s+)?(\\d\\d?\\d?(?:[.,?\u00a0\u202f\ufffd\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
 
   private static final Pattern patternScoreLine = Pattern.compile("^" + _patternIndex + _patternScore);
   private static final Pattern patternScoreTitle = Pattern.compile("^" + _patternScore);
@@ -206,20 +194,5 @@ public class RawScoreParser {
         .replace("\u202f", "")
         .replace("\ufffd", "")
         .replace(" ", "");
-  }
-
-  protected List<NVRamScore> filterDuplicates(List<NVRamScore> scores) {
-    List<NVRamScore> scoreList = new ArrayList<>();
-    int pos = 1;
-    for (NVRamScore s : scores) {
-      Optional<NVRamScore> match = scoreList.stream().filter(score -> score.getFormattedScore().equals(s.getFormattedScore()) && String.valueOf(score.getPlayerInitials()).equals(s.getPlayerInitials())).findFirst();
-      if (match.isPresent()) {
-        continue;
-      }
-      s.setPosition(pos);
-      scoreList.add(s);
-      pos++;
-    }
-    return scoreList;
   }
 }
