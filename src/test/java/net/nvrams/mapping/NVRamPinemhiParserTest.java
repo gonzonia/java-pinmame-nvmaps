@@ -62,7 +62,7 @@ public class NVRamPinemhiParserTest extends BaseParserTest {
 
   @Test
   public void testOneFile() throws Exception {
-    String filename = "bop_l8.nv";
+    String filename = "bushido.nv";
     
     int status = doTestOneFile(parser, filename);
     assertEquals(STATUS_SUCCESS, status);

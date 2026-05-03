@@ -24,7 +24,7 @@ public class NVRamToolDecoderTest {
       'E', 'N', 'D'
     };
 
-    NVRamToolDecoder decoder = new NVRamToolDecoder();
+    NVRamToolDecoder decoder = new NVRamToolDecoder(null, null);
     SearchResult result = decoder.search(data, "VALUE=", 12345, 4);
 
     assertNotNull(result);
@@ -41,7 +41,7 @@ public class NVRamToolDecoderTest {
       'E', 'N', 'D'
     };
 
-    NVRamToolDecoder decoder = new NVRamToolDecoder();
+    NVRamToolDecoder decoder = new NVRamToolDecoder(null, null);
     List<SearchResult> results = decoder.searchNumber(data, 12345, -1, 16, true);
 
     assertEquals(2, results.size());

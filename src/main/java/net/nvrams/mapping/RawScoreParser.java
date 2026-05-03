@@ -122,7 +122,7 @@ public class RawScoreParser {
    * These scores do not have a leading position number.
    */
   @Nullable
-  protected NVRamScore createTitledScore(@Nullable String title, @NonNull String line) {
+  public static NVRamScore createTitledScore(@Nullable String title, @NonNull String line) {
     Matcher m = patternScoreTitle.matcher(line);
     if (m.find()) {
       String initials = StringUtils.trim(m.group(1));
@@ -149,7 +149,7 @@ public class RawScoreParser {
   }
 
   @Nullable
-  public NVRamScore createScore(@Nullable String title, @NonNull String line) {
+  public static NVRamScore createScore(@Nullable String title, @NonNull String line) {
     String idx = StringUtils.substringBefore(line, " ");
     idx = idx.replace(")", "");
     idx = idx.replace(",", "");
@@ -164,7 +164,7 @@ public class RawScoreParser {
     return sc;
   }
 
-    protected long toNumericScore(@Nullable String score, boolean log) {
+    protected static long toNumericScore(@Nullable String score, boolean log) {
     if (StringUtils.isEmpty(score)) {
       if (log) {
         LOG.warn("Cannot parse empty numeric highscore, ignoring this segment");

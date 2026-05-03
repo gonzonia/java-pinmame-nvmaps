@@ -44,6 +44,7 @@ public class NVRamParserCompareTool {
       new File("C:/Github/vpin-studio/resources/nvrams")    // resetted nvrams
     };
 
+    int lines = 0;
     try (PrintWriter w = new PrintWriter("allroms.csv")) {
       w.println("\"rom\",\"Name\",\"clone of\",\"pinemHi\",\"tomslogic\",\"superhac\",\"nvrams\"");
       for (String s : roms.keySet()) {
@@ -88,7 +89,9 @@ public class NVRamParserCompareTool {
             }
           }
         }
+        lines++;
       }
     }
+    System.out.println("Dumped " + lines + " lines in allroms.csv");
   }
 }

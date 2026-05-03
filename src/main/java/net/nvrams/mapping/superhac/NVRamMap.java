@@ -217,7 +217,7 @@ public class NVRamMap implements NVRamScoreDefinition {
   @Override
   public NVRamScore getScore(Iterator<String> lines, String title, Locale locale) {
     String line = readLine(lines, null);
-    return NVRamScore.fromRaw(line, title, null);
+    return NVRamScore.fromRaw(line, title, locale);
   }
 
   @Override

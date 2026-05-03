@@ -12,7 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
@@ -42,28 +42,57 @@ public class NVRamToolDecoder {
   // The max number of bytes used for BCD encoding, 8 means 16 digits..., generally it is 5
   private static final int MAX_LENGTH = 8;
 
-  private NVRamMapParser parser = new NVRamMapParser("resources/maps");
-
+  private NVRamMapParser parser;
+  private NVRamToolMapGenerator generator;
 
   File mainFolder = new File("C:/Visual Pinball/VPinMAME/nvram");
 
-  public static void main(String[] args) throws Exception {
-    NVRamToolDecoder decoder = new NVRamToolDecoder();
-    //decoder.decodeAll(); 
-    
-    decoder.decodeTest("agent777", null);
-    //decoder.decodeTest("godzilla", "Godzilla (Sega 1998)"); 
-    //decoder.decodeTest("afm_113b", "Attack from Mars (Bally 1995)"); 
-    //decoder.decodeTest("bdk_294", null);
+  public NVRamToolDecoder(NVRamMapParser parser, NVRamToolMapGenerator generator) {
+    this.parser = parser;
+    this.generator = generator;
   }
 
+  public static void main(String[] args) throws Exception {
+
+    String mapsFolder = "resources/maps";
+
+    //OLE working folder !
+    mapsFolder = "C:/Github/pinmame-nvram-maps/maps";
+
+    NVRamMapParser parser = new NVRamMapParser(mapsFolder);
+
+    String decodedFolder = mapsFolder + "/decoded";
+    NVRamToolMapGenerator generator = new NVRamToolMapGenerator(decodedFolder);
+
+    NVRamToolDecoder decoder = new NVRamToolDecoder(parser, generator);
+    //decoder.decodeAll()
+
+    decoder.decodeMono("antar", "Antar (Playmatic 1979)", 700000L, List.of(86770L, 98560L, 91630L));
+  }
+
+  //====================================================================
+
+  private void decodeMono(String rom, String tablename, long highscore, List<Long> scores) throws Exception{
+    File entry = new File(mainFolder, rom + ".nv");
+    NVRamScore sc = new NVRamScore(null, highscore, -1, null);
+    sc.setLabel("Highest Score");
+    decodeWithScores(entry, rom, tablename, List.of(sc), scores);
+  }
+
+  @SuppressWarnings("unused")
+  private void decode(String rom, String tablename) throws Exception {
+    File entry = new File(mainFolder, rom + ".nv");
+    decodeWithPinemhi(entry, rom, tablename);
+  }
+
+  @SuppressWarnings("unused")
   private void decodeAll() throws Exception {
 
     Files.list(mainFolder.toPath()).forEach(p -> {
       String rom = FilenameUtils.getBaseName(p.getFileName().toString());
       try {
         if (!rom.endsWith(".nv")) {
-          decode(p.toFile(), rom, null);
+          decodeWithPinemhi(p.toFile(), rom, null);
           LOG.warn("----------------------");
         }
       }
@@ -73,23 +102,33 @@ public class NVRamToolDecoder {
     });
   }
 
-  private void decodeTest(String rom, String tablename) throws Exception {
-    File entry = new File(mainFolder, rom + ".nv");
-    decode(entry, rom, tablename);
-    test(entry, rom);
+  //====================================================================
+
+  private void decodeWithPinemhi(File entry, String rom, String tablename) throws Exception {
+    // load pinhemi and parse scores
+    LOG.warn("...get scores from Pinemhi");
+    List<NVRamScore> scores = getScoresFromPinemhi(entry, rom, true);
+    if (scores.isEmpty()) {
+      LOG.warn("Found empty highscore for nvram {} !!!", entry.getAbsolutePath());
+      return;
+    }
+    decodeWithScores(entry, rom, tablename, scores, null);
   }
 
-  private void test(String rom, String tablename) throws Exception {
-    File entry = new File(mainFolder, rom + ".nv");
-
-    getScoresFromPinemhi(entry, rom, true);
-    test(entry, rom);
+  private void dump(File entry, String rom) throws IOException {
+    NVRamMap map = new NVRamMap();
+    map.setRom(rom, rom);
+    byte[] bytes = Files.readAllBytes(entry.toPath());
+    SparseMemory memory = parser.getMemory(map, bytes);
+    NVRamToolHexDump hexdump = new NVRamToolHexDump();
+    String dump = hexdump.hexDump(map, memory, Locale.ENGLISH);
+    System.out.println(dump);
   }
 
-
+  @SuppressWarnings("unused")
   private void test(File entry, String rom) throws IOException {
     // now do some tests
-    File mapfile = new File(NVRamToolMapGenerator.DECODED_ROOT, rom + ".map.json");
+    File mapfile = new File(generator.getDecodedFolder(), rom + ".map.json");
     NVRamMap map = parser.getLocalMap(mapfile, rom);
 
     if (map != null) {
@@ -120,9 +159,14 @@ public class NVRamToolDecoder {
   }
 
 
-  private void decode(File entry, String rom, String tablename) throws Exception {
+  private void decodeWithScores(File entry, String rom, String tablename, List<NVRamScore> scores, List<Long> playerScores) throws Exception {
     // new rom to be decoded
     LOG.reset();
+
+    File target = new File("nvrams", rom + ".nv");
+    if (!target.exists()) {
+      Files.copy(entry.toPath(), target.toPath());
+    }
 
     LOG.warn("Decoding {}...", rom);
 
@@ -132,40 +176,12 @@ public class NVRamToolDecoder {
       return;
     }
 
-    // First try to determine associated VpsTable
-    VpsTable table = null;
-    /*
-    VpsTable table = null;
-    if (StringUtils.isNotEmpty(tablename)) {
-      List<VpsTable> tables = vps.getTables().stream().filter(t -> StringUtils.containsIgnoreCase(t.getDisplayName(), tablename)).collect(Collectors.toList());
-      if (tables.size() == 1) {
-        table = tables.get(0);
-          LOG.warn("Table found by name {}", table.getDisplayName());
-      }
-    }
-    // table  not found by name, search in all tables by rom
-    if (table == null) {
-      List<VpsTable> tables = vps.getTables().stream()
-        .filter(t -> t.getRomFiles() != null && t.getRomFiles().stream().anyMatch(r -> StringUtils.equalsIgnoreCase(rom, r.getVersion())))
-        .collect(Collectors.toList());
-      if (tables.size() == 1) {
-        table = tables.get(0);
-          LOG.warn("Table found by rom {}", table.getDisplayName());
-      }
-      else if (tables.size() > 1) {
-          LOG.warn("Several tables found for rom {}, please choose one !", rom);
-        for (VpsTable t : tables) {
-            LOG.warn("=> {}", t.getDisplayName());
-        }
-        return;
-      }
-      else {
-          LOG.warn("No Table associated with rom {} in VPS ??", rom);
-      }
-    }
-    */
+    dump(entry, rom);
 
     //---------------------------------
+
+    VpsTable table = new VpsTable();
+    table.setDisplayName(tablename);
 
     // other nvram folders for validation of scores
     File[] testFolders = new File[] { 
@@ -184,15 +200,7 @@ public class NVRamToolDecoder {
       new File("C:/Github/vpin-studio/resources/nvrams")    // resetted nvrams
     };
 
-    // load pinhemi and parse scores
-    LOG.warn("...get scores from Pinemhi");
-  
-    List<NVRamScore> scores = getScoresFromPinemhi(entry, rom, true);
-    if (scores.isEmpty()) {
-      LOG.warn("Found empty highscore for nvram {} !!!", entry.getAbsolutePath());
-      return;
-    }
-    // cache of parsed pinemhi scores (nvram > scores)
+    // cache of parsed scores (nvram > scores)
     Map<File, List<NVRamScore>> cacheScores = new HashMap<>();
 
     //-------------------------------------------
@@ -201,23 +209,41 @@ public class NVRamToolDecoder {
     byte[] bytes = Files.readAllBytes(entry.toPath());
 
     // calculate score mappings, not presuming any score encoding length
-    LinkedHashMap<NVRamScore, SearchResult> selectedScores = parseScores(bytes, rom, testFolders, scores, cacheScores, -1);
+    LinkedHashMap<NVRamScore, SearchResult> selectedScores = parseHighScores(bytes, rom, testFolders, scores, cacheScores, -1);
 
-    NVRamToolMapGenerator generator = new NVRamToolMapGenerator();
+    LinkedHashMap<Long, SearchResult> selectedPlayerScores = null;
+    if (playerScores != null) {
+      selectedPlayerScores = parseScores(bytes, rom, playerScores, -1);
+    }
+
     if (selectedScores.size() > 0) {
 
       LinkedHashMap<String, SearchResult> checksums = parseChecksum(bytes, selectedScores);
 
       // generate the map
       boolean useHexForPosition = false;
-      generator.generateHighscores(rom, table, useHexForPosition, selectedScores, checksums);
+      generator.generateHighscores(rom, table, useHexForPosition, selectedScores, selectedPlayerScores, checksums);
     }
     generator.appendText(rom, "\n/*\n" + LOG.getText() + "\n*/\n");
   }
 
   //---------------------------------------------
 
-  private LinkedHashMap<NVRamScore, SearchResult> parseScores(byte[] bytes, String rom, File[] testFolders,
+  private LinkedHashMap<Long, SearchResult> parseScores(byte[] bytes, String rom, List<Long> playerScores, int forcedScoreLength) {
+    LinkedHashMap<Long, SearchResult> res = new LinkedHashMap<>();
+
+    for (int s = 0; s < playerScores.size(); s++) {
+      List<SearchResult> positions = searchNumber(bytes, playerScores.get(s), forcedScoreLength, MAX_LENGTH, true);
+      SearchResult result = findOrContinue(null, positions, (i, p) -> null);
+      if (result != null) {
+        res.put(playerScores.get(s), result);
+      }
+    }
+
+    return res;
+  }
+
+  private LinkedHashMap<NVRamScore, SearchResult> parseHighScores(byte[] bytes, String rom, File[] testFolders,
       List<NVRamScore> scores, Map<File, List<NVRamScore>> cacheScores, int forcedScoreLength) {
     // an array to mark bytes that are consumed
     boolean[] used = new boolean[bytes.length];
@@ -232,23 +258,31 @@ public class NVRamToolDecoder {
 
       LOG.warn("...checking score \"{}\", position {}", sc, scPos);
 
+      SearchResult result = null;
+
       // search using INITIALS followed by SCORE pattern
-      SearchResult result = search(bytes, sc.getInitials(), sc.getScore(), MAX_LENGTH);
+      if (sc.hasInitials()) {
+        result = search(bytes, sc.getInitials(), sc.getScore(), MAX_LENGTH);
+      }
       
       // not found try not contiguous
       if (result == null) {
         // search all position for initials and scores
-        List<Integer> initials = searchString(bytes, sc.getInitials());
-        List<SearchResult> positions = searchNumber(bytes, sc.getScore(), forcedScoreLength, MAX_LENGTH, true);
-        // remove initials positions that conflict with previously selected SearchResult
-        CollectionUtils.filter(initials, p -> {
-          for (int i = 0; i < 3; i++) {
-            if (used[p + i]) {
-              return false;
+        List<Integer> initials = null;
+        if (sc.hasInitials()) {
+          initials = searchString(bytes, sc.getInitials());
+          // remove initials positions that conflict with previously selected SearchResult
+          CollectionUtils.filter(initials, p -> {
+            for (int i = 0; i < 3; i++) {
+              if (used[p + i]) {
+                return false;
+              }
             }
-          }
-          return true;
-        });
+            return true;
+          });
+        }
+
+        List<SearchResult> positions = searchNumber(bytes, sc.getScore(), forcedScoreLength, MAX_LENGTH, true);
         // remove positions that conflict with previously selected SearchResult
         CollectionUtils.filter(positions, p -> {
           for (int i = 0; i < p.scoreLength; i++) {
@@ -261,17 +295,18 @@ public class NVRamToolDecoder {
 
         final NVRamScore _previousScore = previousScore;
         final SearchResult _previousResult = previousResult;
-        result = findOrContinue(initials, positions, () -> {
+
+        result = findOrContinue(initials, positions, (i1, p1) -> {
           // if there is a position contiguous to the previous one for same score label, use this one
-          List<Integer> filteredInitials = initials;
+          List<Integer> filteredInitials = i1;
           if (_previousResult != null) {
-            for (Integer pos : initials) {
+            for (Integer pos : i1) {
               if (_previousResult.initialPosition + 3 == pos) {
                 filteredInitials = List.of(pos);
                 break;
               }
             }
-            for (SearchResult pos : positions) {
+            for (SearchResult pos : p1) {
               if (_previousResult.scorePosition + _previousResult.scoreLength + 1 == pos.scorePosition 
                     && StringUtils.equals(sc.getLabel(), _previousScore.getLabel())) {
                 LOG.warn("  Find a contiguous score for same regions {}, use it..", sc.getLabel());
@@ -280,7 +315,7 @@ public class NVRamToolDecoder {
             }
           }
           // else continue in trying to eliminate scores that have another position in alternative nvram files
-          return findOrContinue(filteredInitials, positions, () -> {
+          return findOrContinue(filteredInitials, p1, (i2, p2) -> {
             LOG.warn("  Several positions, check with alternative nvrams..");
             // check in alternative nvrams
             for (File testFolder : testFolders) {
@@ -307,13 +342,13 @@ public class NVRamToolDecoder {
                   byte[] altbytes = Files.readAllBytes(altentry.toPath());
 
                   // eliminate in initials and positions the ones that are not common
-                  for (Iterator<Integer> it = initials.iterator(); it.hasNext();) {
+                  for (Iterator<Integer> it = i2.iterator(); it.hasNext();) {
                     Integer pos = it.next();
                     if (!StringUtils.equals(decodeString(altbytes, pos, altsc.getInitials().length()), altsc.getInitials())) {
                       it.remove();
                     }
                   }
-                  for (Iterator<SearchResult> it = positions.iterator(); it.hasNext();) {
+                  for (Iterator<SearchResult> it = p2.iterator(); it.hasNext();) {
                     SearchResult pos = it.next();
                     if (decodeBCD(altbytes, pos.scorePosition, pos.scoreLength) != altsc.getScore()) {
                       it.remove();
@@ -330,11 +365,11 @@ public class NVRamToolDecoder {
               }
             }
             //-------------------------------------------
-            return findOrContinue(initials, positions, () -> {
+            return findOrContinue(i1, p1, (i3, p3) -> {
               LOG.warn("  >>>>>>>> still different positions so return first one...");
-              SearchResult res = positions.get(0);
-              if (initials.size() > 0) {
-                res.initialPosition = initials.get(0);
+              SearchResult res = p3.get(0);
+              if (i3.size() > 0) {
+                res.initialPosition = i3.get(0);
               }
               return res;
             });
@@ -376,7 +411,7 @@ public class NVRamToolDecoder {
           LOG.warn("All scores not stored on same length, normalize to the most frequent length {}, appearring {} times on {}\n", 
             occur.getKey(), occur.getValue(), selectedScores.size());
           // now start again the computation forcing a score length
-        return parseScores(bytes, rom, testFolders, scores, cacheScores, occur.getKey());
+        return parseHighScores(bytes, rom, testFolders, scores, cacheScores, occur.getKey());
       }
     }
     // else we have our score mappings
@@ -385,7 +420,8 @@ public class NVRamToolDecoder {
 
   //------------------------------------------------
 
-  private SearchResult findOrContinue(List<Integer> initials, List<SearchResult> positions, Supplier<SearchResult> continueChain) {
+  private SearchResult findOrContinue(List<Integer> initials, List<SearchResult> positions, 
+                                      BiFunction<List<Integer>, List<SearchResult>, SearchResult> continueChain) {
     if (positions.size() == 0) {
       return null;
     }
@@ -407,7 +443,7 @@ public class NVRamToolDecoder {
       return result;
     }
     else {
-      return continueChain != null? continueChain.get() : null;
+      return continueChain != null? continueChain.apply(initials, positions) : null;
     }
   }
 
@@ -687,3 +723,36 @@ public class NVRamToolDecoder {
     }
   }
 }
+
+
+    /*
+    // First try to determine associated VpsTable
+    VpsTable table = null;
+    if (StringUtils.isNotEmpty(tablename)) {
+      List<VpsTable> tables = vps.getTables().stream().filter(t -> StringUtils.containsIgnoreCase(t.getDisplayName(), tablename)).collect(Collectors.toList());
+      if (tables.size() == 1) {
+        table = tables.get(0);
+          LOG.warn("Table found by name {}", table.getDisplayName());
+      }
+    }
+    // table  not found by name, search in all tables by rom
+    if (table == null) {
+      List<VpsTable> tables = vps.getTables().stream()
+        .filter(t -> t.getRomFiles() != null && t.getRomFiles().stream().anyMatch(r -> StringUtils.equalsIgnoreCase(rom, r.getVersion())))
+        .collect(Collectors.toList());
+      if (tables.size() == 1) {
+        table = tables.get(0);
+          LOG.warn("Table found by rom {}", table.getDisplayName());
+      }
+      else if (tables.size() > 1) {
+          LOG.warn("Several tables found for rom {}, please choose one !", rom);
+        for (VpsTable t : tables) {
+            LOG.warn("=> {}", t.getDisplayName());
+        }
+        return;
+      }
+      else {
+          LOG.warn("No Table associated with rom {} in VPS ??", rom);
+      }
+    }
+    */

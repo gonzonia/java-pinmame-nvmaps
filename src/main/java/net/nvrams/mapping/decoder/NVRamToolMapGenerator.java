@@ -33,12 +33,20 @@ public class NVRamToolMapGenerator {
   };
   private static final String[] SHORT_LABELS = {"1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th" };
 
-  public static final File DECODED_ROOT = new File("C:/temp/_NVRAMS/decoded");
+  private String decodedRoot;
 
+  public NVRamToolMapGenerator(String decodedFolder) {
+    this.decodedRoot = decodedFolder;
+  }
 
-  
+  public String getDecodedFolder() {
+    return decodedRoot;
+  }
+
   public void generateHighscores(String rom, VpsTable table, boolean useHexForPosition,
-      LinkedHashMap<NVRamScore, SearchResult> selectedScores, LinkedHashMap<String, SearchResult> checksums) throws IOException {
+      LinkedHashMap<NVRamScore, SearchResult> selectedScores, 
+      LinkedHashMap<Long, SearchResult> selectedPlayerScores, 
+      LinkedHashMap<String, SearchResult> checksums) throws IOException {
 
     // read or create an existing map
     JsonObject map = readOrCreateMap(rom, table);
@@ -83,7 +91,9 @@ public class NVRamToolMapGenerator {
       JsonObject score = new JsonObject();
       score.addProperty("label", label);
       score.addProperty("short_label", shortLabel);
-      score.add("initials", createMapping(result.initialPosition, 3, "ch", useHexForPosition));
+      if (result.initialPosition >= 0) {
+        score.add("initials", createMapping(result.initialPosition, 3, "ch", useHexForPosition));
+      }
       JsonObject scoreObject = createMapping(result.scorePosition, result.scoreLength, "bcd", useHexForPosition);
       score.add("score", scoreObject);
       if (StringUtils.isNotEmpty(sc.getSuffix())) {
@@ -102,6 +112,30 @@ public class NVRamToolMapGenerator {
       map.add("mode_champions", modeChampion);
     }
 
+    //-------
+    if (selectedPlayerScores != null) {
+      JsonObject gameState = null;
+      if (map.has("game_state")) {
+        gameState = map.getAsJsonObject("game_state");
+      }
+      else {
+        gameState = new JsonObject();
+        map.add("game_state", gameState);
+      }
+
+      JsonArray scores = new JsonArray();
+      gameState.add("scores", scores);
+      int idx = 1;
+      for (Entry<Long, SearchResult> sr : selectedPlayerScores.entrySet()) {
+        JsonObject score = new JsonObject();
+        score.addProperty("label", "Player " + idx);
+        score.addProperty("start", sr.getValue().scorePosition);
+        score.addProperty("length", sr.getValue().scoreLength);
+        score.addProperty("encoding", "bcd");
+        scores.add(score);
+        idx++;
+      }
+    }
 
     //-------
     JsonArray checksums16 = new JsonArray();
@@ -122,7 +156,7 @@ public class NVRamToolMapGenerator {
   private JsonObject readOrCreateMap(String rom, @Nullable VpsTable table) throws IOException, FileNotFoundException {
     JsonObject map;
 
-    File mapfile = new File(DECODED_ROOT, rom + ".map.json");
+    File mapfile = new File(decodedRoot, rom + ".map.json");
     if (mapfile.exists()) {
       try (FileReader reader = new FileReader(mapfile)) {
         JsonReader jsonreader = new JsonReader(reader);
@@ -178,7 +212,8 @@ public class NVRamToolMapGenerator {
   }
 
   private void writeMap(String rom, JsonObject map) throws IOException {
-    File mapfile = new File(DECODED_ROOT, rom + ".map.json");
+    File mapfile = new File(decodedRoot, rom + ".map.json");
+    mapfile.getParentFile().mkdirs();
     try (FileWriter writer = new FileWriter(mapfile)) {
       JsonWriter jsonWriter = new JsonWriter(writer);
       jsonWriter.setIndent("  ");
@@ -188,7 +223,7 @@ public class NVRamToolMapGenerator {
   }
 
   public void appendText(String rom, String text) throws IOException {
-    File mapfile = new File(DECODED_ROOT, rom + ".map.json");
+    File mapfile = new File(decodedRoot, rom + ".map.json");
     try (FileWriter writer = new FileWriter(mapfile, true)) {
       writer.append(text);
     }

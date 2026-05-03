@@ -36,7 +36,7 @@ class NVRamParsersTest {
   @Test
   public void compareNVsWithMapParser() throws Exception {
     doCompareNVs(mapParser, new String[] {
-      "barbwire", "rescu911"
+      "andretti", "barbwire", "rescu911"
     });
   }
 
@@ -80,7 +80,7 @@ class NVRamParsersTest {
 
     NVRamParser parser =  mapParser;
 
-    String rom = "andretti";
+    String rom = "gi_l9";
     boolean parseAll = false;
     /*
 

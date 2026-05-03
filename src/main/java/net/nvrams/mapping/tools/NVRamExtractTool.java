@@ -41,6 +41,7 @@ public class NVRamExtractTool {
     }
   }
 
+  @SuppressWarnings("unused")
   private void runAll(String table, String rom) throws Exception {
     try (FileReader r = new FileReader("c:/temp/_NVRAMS/roms.txt");
           BufferedReader br = new BufferedReader(r)) {

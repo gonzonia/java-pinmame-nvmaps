@@ -145,8 +145,8 @@ public class NVRamScore {
     return disp.trim();
   }
 
-  private static final String _patternScore = "(#(\\d+)\\s)?([ ?/+\\-a-zA-Z0-9]{3,}\\s+)?(\\d\\d?\\d?(?:[.,\\u00a0\\u202f\\ufffd\\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
-  private static final Pattern patternScoreTitle = Pattern.compile("^" + _patternScore);
+  private static final String patternScore = "^(#(\\d+)\\s)?([ ?/+\\-a-zA-Z0-9]{3,}\\s+)?(\\d\\d?\\d?(?:[., \\u00a0\\u202f\\ufffd\\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
+  private static final Pattern patternScoreTitle = Pattern.compile(patternScore);
 
   public static NVRamScore fromRaw(String line, String title, Locale locale) {
     Matcher m = patternScoreTitle.matcher(line);
@@ -209,9 +209,9 @@ public class NVRamScore {
       String formattedScore = decimalFormat.format(score);
       // for french locale replace non-breaking spaces with normal spaces
       // see https://bugs.openjdk.org/browse/JDK-8274768, french whitespace separators changed in Java17
-      formattedScore = formattedScore.replace('\u00A0', ' ');
-      formattedScore = formattedScore.replace('\u202F', ' ');
-      formattedScore = formattedScore.replaceAll(" {2}", " ");
+      //formattedScore = formattedScore.replace('\u00A0', ' ');
+      //formattedScore = formattedScore.replace('\u202F', ' ');
+      //formattedScore = formattedScore.replaceAll(" {2}", " ");
       return formattedScore;
     }
     catch (NumberFormatException e) {

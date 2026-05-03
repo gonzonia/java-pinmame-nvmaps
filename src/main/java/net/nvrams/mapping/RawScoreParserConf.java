@@ -18,12 +18,9 @@ public class RawScoreParserConf {
     // to be added in ScoringDB.json....
     //               system-rom-20    ripleys
     "HIGHEST SCORE", "HIGH SCORE" , "GRAND CHAMP",
-    // tf_180                                               jd_l1                           freddy         robo_a34     bushido
-    "AUTOBOT GRAND CHAMPION", "DECEPTICON GRAND CHAMPION", "REGULAR GAME GRAND CHAMPION", "DREAM MASTER", "COMMANDER"//, "TOP SCORE"
+    // tf_180                                               jd_l1                           freddy         robo_a34     
+    "AUTOBOT GRAND CHAMPION", "DECEPTICON GRAND CHAMPION", "REGULAR GAME GRAND CHAMPION", "DREAM MASTER", "COMMANDER"
   );
-
-
-
 
   public static final List<String> SKIP_TITLE_CHECK = List.of(
     "gnr_300", "jupk_513", "jupk_600", "pool_l7", "trek_201", "tf_180", "wwfr_103"

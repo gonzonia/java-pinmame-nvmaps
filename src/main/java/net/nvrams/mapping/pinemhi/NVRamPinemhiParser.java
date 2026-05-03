@@ -30,7 +30,6 @@ import net.nvrams.mapping.NVRamParser;
 import net.nvrams.mapping.NVRamScore;
 import net.nvrams.mapping.pinemhi.adapters.AlteringLinesWithoutPosAdapter;
 import net.nvrams.mapping.pinemhi.adapters.Anonymous5PlayerScoreAdapter;
-import net.nvrams.mapping.pinemhi.adapters.FixTitleScoreAdapter;
 import net.nvrams.mapping.pinemhi.adapters.FourColumnScoreAdapter;
 import net.nvrams.mapping.pinemhi.adapters.ScoreNvRamAdapter;
 import net.nvrams.mapping.pinemhi.adapters.SkipFirstListScoreAdapter;
@@ -65,7 +64,7 @@ public class NVRamPinemhiParser implements NVRamParser {
     adapters.add(new SkipFirstListScoreAdapter("godzilla.nv"));
     //adapters.add(new NewLineAfterFirstScoreAdapter("kiko_a10.nv"));
     adapters.add(new Anonymous5PlayerScoreAdapter("punchy.nv"));
-    adapters.add(new FixTitleScoreAdapter("rs_l6.nv", "TODAY'S HIGHEST SCORES", "ALL TIME HIGHEST SCORES"));
+    //adapters.add(new FixTitleScoreAdapter("rs_l6.nv", "TODAY'S HIGHEST SCORES", "ALL TIME HIGHEST SCORES"));
     //adapters.add(new SinglePlayerScoreAdapter());
     //adapters.add(new MultiBlockAdapter("pool_l7.nv", 8));
     adapters.add(new AlteringLinesWithoutPosAdapter("wrldtou2.nv", 5));

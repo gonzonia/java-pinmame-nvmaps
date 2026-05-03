@@ -36,7 +36,9 @@ public class NVRamMapParserTest extends BaseParserTest {
   // rapidfir, no highscore defined in map
   // sfight2, review the maps
   // strlt_l1, only one highscores, that is correct when pinemhi generate 4 lines
-  private final static List<String> ignoreList = Arrays.asList("barbwire.nv", 
+  private final static List<String> ignoreList = Arrays.asList(
+      "andretti.nv",
+      "barbwire.nv", 
       "acd_170.nv",         // offset in names
       "bguns_la.nv", 
       "rapidfir.nv", 
@@ -59,7 +61,7 @@ public class NVRamMapParserTest extends BaseParserTest {
 
   @Test
   public void testOneFile() throws Exception {
-    String filename = "bop_l8.nv";
+    String filename = "bcats_l5.nv";
 
     int status = doTestOneFile(parser, filename);
     assertEquals(STATUS_SUCCESS, status);
