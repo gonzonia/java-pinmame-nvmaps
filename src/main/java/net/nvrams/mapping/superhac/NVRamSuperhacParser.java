@@ -35,6 +35,13 @@ public class NVRamSuperhacParser implements NVRamParser {
 
   public NVRamSuperhacParser(String superhacMaps) {
     this.superhacMaps = superhacMaps;
+
+    try {
+      ensureCacheMapForRom();
+    }
+    catch (IOException e) {
+      LOG.info("Failed to initialize: {}", e.getMessage(), e);
+    }
   }
 
   //@Override
@@ -113,16 +120,6 @@ public class NVRamSuperhacParser implements NVRamParser {
         });
       }
       LOG.info("Rom Cache loaded with {} roms", cacheMapForRom.size());
-    }
-  }
-
-  @Override
-  public void init() {
-    try {
-      ensureCacheMapForRom();
-    }
-    catch (IOException e) {
-      LOG.info("Failed to initialize: {}", e.getMessage(), e);
     }
   }
 }

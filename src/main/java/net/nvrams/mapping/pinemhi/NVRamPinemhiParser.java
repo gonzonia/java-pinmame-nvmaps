@@ -247,9 +247,4 @@ public class NVRamPinemhiParser implements NVRamParser {
     }
     return iniConfiguration;
   }
-
-  @Override
-  public void init() {
-
-  }
 }

@@ -65,6 +65,13 @@ public class NVRamMapParser implements NVRamParser {
    */
   public NVRamMapParser(String mapFolder) {
     this.mapFolder = mapFolder;
+
+    try {
+      ensureCacheMapForRom();
+    }
+    catch (IOException e) {
+      LOG.info("Failed to initialize: {}", e.getMessage(), e);
+    }
   }
 
   public String getMapFolder() {
@@ -541,15 +548,5 @@ public class NVRamMapParser implements NVRamParser {
   @FunctionalInterface
   public interface ProcessStream<T> {
     T process(InputStream in) throws IOException;
-  }
-
-  @Override
-  public void init() {
-    try {
-      ensureCacheMapForRom();
-    }
-    catch (IOException e) {
-      LOG.info("Failed to initialize: {}", e.getMessage(), e);
-    }
   }
 }
