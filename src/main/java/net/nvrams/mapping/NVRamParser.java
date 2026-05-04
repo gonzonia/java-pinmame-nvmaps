@@ -15,4 +15,5 @@ public interface NVRamParser {
 
   List<NVRamScore> parseNvRam(String rom, File nvRam, Locale locale, boolean parseAll) throws IOException;
 
+  void init();
 }

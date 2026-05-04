@@ -542,4 +542,14 @@ public class NVRamMapParser implements NVRamParser {
   public interface ProcessStream<T> {
     T process(InputStream in) throws IOException;
   }
+
+  @Override
+  public void init() {
+    try {
+      ensureCacheMapForRom();
+    }
+    catch (IOException e) {
+      LOG.info("Failed to initialize: {}", e.getMessage(), e);
+    }
+  }
 }

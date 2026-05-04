@@ -22,7 +22,7 @@ import net.nvrams.mapping.NVRamParser;
 import net.nvrams.mapping.NVRamScore;
 
 /**
- * 
+ *
  */
 @Service
 public class NVRamSuperhacParser implements NVRamParser {
@@ -36,7 +36,7 @@ public class NVRamSuperhacParser implements NVRamParser {
   public NVRamSuperhacParser(String superhacMaps) {
     this.superhacMaps = superhacMaps;
   }
-  
+
   //@Override
   public Set<String> getSupportedRoms() {
     try {
@@ -102,16 +102,27 @@ public class NVRamSuperhacParser implements NVRamParser {
   private void ensureCacheMapForRom() throws IOException {
     if (cacheMapForRom == null) {
       LOG.info("Load cache of rom map from classpath resources");
-      File roms  = new File(superhacMaps);
+      File roms = new File(superhacMaps);
       if (!roms.exists()) {
-          throw new IOException(roms.getAbsolutePath() + " not found in classpath");
+        throw new IOException(roms.getAbsolutePath() + " not found in classpath");
       }
 
       try (InputStream in = new FileInputStream(roms)) {
         ObjectMapper mapper = new ObjectMapper();
-        cacheMapForRom = mapper.readValue(in, new TypeReference<Map<String, NVRamMap>>() {});
+        cacheMapForRom = mapper.readValue(in, new TypeReference<Map<String, NVRamMap>>() {
+        });
       }
       LOG.info("Rom Cache loaded with {} roms", cacheMapForRom.size());
+    }
+  }
+
+  @Override
+  public void init() {
+    try {
+      ensureCacheMapForRom();
+    }
+    catch (IOException e) {
+      LOG.info("Failed to initialize: {}", e.getMessage(), e);
     }
   }
 }
