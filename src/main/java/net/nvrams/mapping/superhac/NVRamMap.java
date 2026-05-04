@@ -137,7 +137,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     switch (decoder) {
       case "leaderboard_bcd":
         for (NVRamEntry entry : entries) {
-          nbScores += scores.process(entry, "HIGHEST SCORES", true);
+          nbScores += scores.process(entry, StringUtils.defaultString(entry.getTitle(), "HIGHEST SCORES"), true);
         }
         break;
       case "mixed_leaderboard":
