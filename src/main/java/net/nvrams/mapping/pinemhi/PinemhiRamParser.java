@@ -128,7 +128,7 @@ public class PinemhiRamParser implements NVRamParser {
     File originalNVRamFile = nvRam;
     String nvRamFileName = nvRam.getCanonicalFile().getName().toLowerCase();
     String nvRamName = FilenameUtils.getBaseName(nvRamFileName).toLowerCase();
-    if (nvRamFileName.contains(" ")) {
+    if (nvRamFileName.contains(" ") && nvRamName.endsWith(".nv")) {
       LOG.info("Stripping NV offset from nvram file \"{}\" to check if supported.", nvRamFileName);
       nvRamName = nvRamFileName.substring(0, nvRamFileName.indexOf(" "));
 
