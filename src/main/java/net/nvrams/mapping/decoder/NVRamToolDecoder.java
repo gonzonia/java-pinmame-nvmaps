@@ -27,7 +27,7 @@ import net.nvrams.mapping.map.NVRamMap;
 import net.nvrams.mapping.map.NVRamMapParser;
 import net.nvrams.mapping.map.NVRamScoreMapping;
 import net.nvrams.mapping.map.SparseMemory;
-import net.nvrams.mapping.pinemhi.NVRamPinemhiParser;
+import net.nvrams.mapping.pinemhi.PinemhiRamParser;
 import net.nvrams.mapping.tools.NVRamToolDump;
 import net.nvrams.mapping.tools.NVRamToolHexDump;
 
@@ -454,7 +454,7 @@ public class NVRamToolDecoder {
 
     // load pinhemi and parse scores
     Locale locale = Locale.GERMAN;
-    NVRamPinemhiParser pinemhiParser = new NVRamPinemhiParser("resources/pinemhi/");
+    PinemhiRamParser pinemhiParser = new PinemhiRamParser("resources/pinemhi/");
     try {
       if (displayResult) {
         List<String> raw = pinemhiParser.getRaw(rom, nvramFile, locale);

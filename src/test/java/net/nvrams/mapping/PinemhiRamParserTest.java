@@ -10,13 +10,13 @@ import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
-import net.nvrams.mapping.pinemhi.NVRamPinemhiParser;
+import net.nvrams.mapping.pinemhi.PinemhiRamParser;
 
 /**
  */
-public class NVRamPinemhiParserTest extends BaseParserTest {
+public class PinemhiRamParserTest extends BaseParserTest {
 
-  private NVRamPinemhiParser parser = new NVRamPinemhiParser("resources/pinemhi/");
+  private PinemhiRamParser parser = new PinemhiRamParser("resources/pinemhi/");
 
   @Test
   public void testPinemhiExtract() throws IOException {
@@ -25,6 +25,16 @@ public class NVRamPinemhiParserTest extends BaseParserTest {
 
     List<String> lines = parser.executePINemHi(nvram);
     assertEquals(14, lines.size());
+  }
+
+
+  @Test
+  public void testPinemhiExtractFPRam() throws IOException {
+    String rom = "Jaws";
+    File nvram = new File("fprams", rom + ".fpRAM");
+
+    List<String> lines = parser.executePINemHi(nvram);
+    assertEquals(5, lines.size());
   }
 
 
@@ -53,11 +63,19 @@ public class NVRamPinemhiParserTest extends BaseParserTest {
     );
 
   @Test
-  public void testAllFiles() throws Exception {
+  public void testAllNvFiles() throws Exception {
     String firstRom = null;
 
     List<String> failedList = doTestAllFiles(parser, firstRom, ignoreList);
     assertEquals(0, failedList.size(), "NVRam failed: " + failedList);
+  }
+
+  @Test
+  public void testAllFpFiles() throws Exception {
+    String firstRom = null;
+
+    List<String> failedList = doTestAllFiles(parser, firstRom, ignoreList, ".fpRAM");
+    assertEquals(0, failedList.size(), "FPRam failed: " + failedList);
   }
 
   @Test

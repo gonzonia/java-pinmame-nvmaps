@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import net.nvrams.mapping.map.NVRamMapParser;
-import net.nvrams.mapping.pinemhi.NVRamPinemhiParser;
+import net.nvrams.mapping.pinemhi.PinemhiRamParser;
 import net.nvrams.mapping.superhac.NVRamSuperhacParser;
 
 /**
@@ -20,7 +20,7 @@ import net.nvrams.mapping.superhac.NVRamSuperhacParser;
  */
 class NVRamParserCompareTest {
 
-  private NVRamParser pinemhi = new NVRamPinemhiParser("resources/pinemhi/");
+  private NVRamParser pinemhi = new PinemhiRamParser("resources/pinemhi/");
   private NVRamParser mapParser = new NVRamMapParser("resources/maps");
   private NVRamParser superhacParser = new NVRamSuperhacParser("resources/superhac/roms.json");
 

@@ -1,7 +1,7 @@
 package net.nvrams.mapping.tools;
 
 import net.nvrams.mapping.map.NVRamMapParser;
-import net.nvrams.mapping.pinemhi.NVRamPinemhiParser;
+import net.nvrams.mapping.pinemhi.PinemhiRamParser;
 import net.nvrams.mapping.superhac.NVRamSuperhacParser;
 
 import java.io.File;
@@ -23,7 +23,7 @@ public class NVRamParserCompareTool {
     Map<String, String> clones = VPXUtil.getClones(mameFolder);
 
     NVRamMapParser parser = new NVRamMapParser("resources/maps");
-    NVRamPinemhiParser pinemhi = new NVRamPinemhiParser("resources/pinemhi/");
+    PinemhiRamParser pinemhi = new PinemhiRamParser("resources/pinemhi/");
     NVRamSuperhacParser superhac = new NVRamSuperhacParser("resources/superhac/roms.json");
 
     File nvramsFolder = new File("nvrams");

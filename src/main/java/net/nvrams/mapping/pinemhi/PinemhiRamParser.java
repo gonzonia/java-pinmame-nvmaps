@@ -34,26 +34,27 @@ import net.nvrams.mapping.pinemhi.adapters.FourColumnScoreAdapter;
 import net.nvrams.mapping.pinemhi.adapters.ScoreNvRamAdapter;
 import net.nvrams.mapping.pinemhi.adapters.SkipFirstListScoreAdapter;
 
-public class NVRamPinemhiParser implements NVRamParser {
-  private final static Logger LOG = LoggerFactory.getLogger(NVRamPinemhiParser.class);
-  
+public class PinemhiRamParser implements NVRamParser {
+  private final static Logger LOG = LoggerFactory.getLogger(PinemhiRamParser.class);
+
   private File pinemhiFolder;
   private File vpPathAdjusted = null;
+  private File fpPathAdjusted = null;
   private Set<String> supportedNvRams = new HashSet<>();
 
   private final RawScoreParser rawScoreParser;
 
   private final List<ScoreNvRamAdapter> adapters = new ArrayList<>();
 
-  public NVRamPinemhiParser(String pinhemiFolder) {
+  public PinemhiRamParser(String pinhemiFolder) {
     this(pinhemiFolder, RawScoreParserConf.createParser());
   }
 
-  public NVRamPinemhiParser(String pinhemiFolder, List<String> titles, List<String> romsSkipTitlesCheck) {
+  public PinemhiRamParser(String pinhemiFolder, List<String> titles, List<String> romsSkipTitlesCheck) {
     this(pinhemiFolder, new RawScoreParser(titles, romsSkipTitlesCheck));
   }
 
-  private NVRamPinemhiParser(String pinemhiFolder, RawScoreParser rawScoreParser) {
+  private PinemhiRamParser(String pinemhiFolder, RawScoreParser rawScoreParser) {
     this.rawScoreParser = rawScoreParser;
     this.pinemhiFolder = new File(pinemhiFolder);
 
@@ -165,7 +166,12 @@ public class NVRamPinemhiParser implements NVRamParser {
     File commandFile = new File(pinemhiFolder, "PINemHi.exe");
 
     // make sure nvram can be found
-    adjustVPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    if (originalNVRamFile.getName().toLowerCase().endsWith(".nv")) {
+      adjustVPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    }
+    else if (originalNVRamFile.getName().toLowerCase().endsWith(".fpram")) {
+      adjustFPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    }
 
     String nvRamName = originalNVRamFile.getName().toLowerCase();
     List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), nvRamName);
@@ -197,38 +203,45 @@ public class NVRamPinemhiParser implements NVRamParser {
     return lines;
   }
 
-  /**
-   * Set the path to the nvRamFolder so that nv files can be found
-   * Load pinhemi.ini, update the VP path with the provided folder
-   * For optimization, do it only if the cached folder is different
-   */
   private void adjustVPPathForEmulator(File nvRamFolder, boolean forcePath) {
     if (vpPathAdjusted != null && vpPathAdjusted.equals(nvRamFolder)) {
       return;
     }
-    if (nvRamFolder.exists()) {
+
+    adjustPath(nvRamFolder, "VP", forcePath);
+    vpPathAdjusted = nvRamFolder;
+  }
+
+  private void adjustFPPathForEmulator(File fpRamFolder, boolean forcePath) {
+    if (fpPathAdjusted != null && fpPathAdjusted.equals(fpRamFolder)) {
+      return;
+    }
+    adjustPath(fpRamFolder, "FP", forcePath);
+    fpPathAdjusted = fpRamFolder;
+  }
+
+  private void adjustPath(File ramFolder, String key, boolean forcePath) {
+    if (ramFolder.exists()) {
       try {
         File pinemhiIni = new File(pinemhiFolder, "pinemhi.ini");
         INIConfiguration iniConfiguration = loadIni(pinemhiIni);
-        String vpPath = (String) iniConfiguration.getSection("paths").getProperty("VP");
-        File vp = new File(vpPath);
+        String emuPathString = (String) iniConfiguration.getSection("paths").getProperty(key);
+        File emuPath = new File(emuPathString);
 
-        if (forcePath || !vp.exists() || !vpPath.endsWith("/")) {
-          vp = new File(nvRamFolder.getAbsolutePath());
-          iniConfiguration.getSection("paths").setProperty("VP", vp.getAbsolutePath().replaceAll("\\\\", "/") + "/");
+        if (forcePath || !emuPath.exists() || !emuPathString.endsWith("/")) {
+          emuPath = new File(ramFolder.getAbsolutePath());
+          iniConfiguration.getSection("paths").setProperty(key, emuPath.getAbsolutePath().replaceAll("\\\\", "/") + "/");
 
           saveIni(pinemhiIni, iniConfiguration);
-          LOG.info("Changed VP path to {}", vp.getAbsolutePath());
+          LOG.info("Changed {} path to {}", key, emuPath.getAbsolutePath());
         }
-
-        // cache latest adjusted path for optimisation
-        vpPathAdjusted = nvRamFolder;
       }
       catch (Exception e) {
-        LOG.error("Failed to update VP path in pinemhi.ini: {}", e.getMessage(), e);
+        LOG.error("Failed to update {} path in pinemhi.ini: {}", key, e.getMessage(), e);
       }
     }
   }
+
 
   private static void saveIni(File ini, INIConfiguration iniConfiguration) throws IOException, ConfigurationException {
     try (FileWriter fileWriter = new FileWriter(ini)) {
