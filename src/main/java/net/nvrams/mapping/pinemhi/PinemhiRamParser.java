@@ -123,25 +123,24 @@ public class PinemhiRamParser implements NVRamParser {
 
 
   @Override
-  public List<String> getRaw(String rom, @NonNull File nvRam, Locale locale) throws IOException {
-
-    File originalNVRamFile = nvRam;
-    String nvRamFileName = nvRam.getCanonicalFile().getName().toLowerCase();
-    String nvRamName = FilenameUtils.getBaseName(nvRamFileName).toLowerCase();
-    if (nvRamFileName.contains(" ") && nvRamName.endsWith(".nv")) {
-      LOG.info("Stripping NV offset from nvram file \"{}\" to check if supported.", nvRamFileName);
-      nvRamName = nvRamFileName.substring(0, nvRamFileName.indexOf(" "));
+  public List<String> getRaw(String rom, @NonNull File ramFile, Locale locale) throws IOException {
+    File originalRamFile = ramFile;
+    String ramFileName = ramFile.getCanonicalFile().getName().toLowerCase();
+    String ramName = FilenameUtils.getBaseName(ramFileName).toLowerCase();
+    if (ramFileName.contains(" ") && ramName.endsWith(".nv")) {
+      LOG.info("Stripping NV offset from nvram file \"{}\" to check if supported.", ramFileName);
+      ramName = ramFileName.substring(0, ramFileName.indexOf(" "));
 
       //rename the original nvram file so that we can parse with the original name
-      originalNVRamFile = new File(nvRam.getParentFile(), nvRamName + ".nv");
+      originalRamFile = new File(ramFile.getParentFile(), ramName + ".nv");
     }
 
-    List<String> lines = executePINemHi(originalNVRamFile);
+    List<String> lines = executePINemHi(originalRamFile);
 
     for (ScoreNvRamAdapter adapter : adapters) {
-      if (adapter.isApplicable(nvRamFileName, lines)) {
+      if (adapter.isApplicable(ramFileName, lines)) {
         LOG.info("Converted score using {}", adapter.getClass().getSimpleName());
-        return adapter.convert(nvRamFileName, lines);
+        return adapter.convert(ramFileName, lines);
       }
     }
     return lines;
@@ -162,20 +161,19 @@ public class PinemhiRamParser implements NVRamParser {
 
 
   @Nullable
-  public List<String> executePINemHi(@NonNull File originalNVRamFile) throws IOException {
+  public List<String> executePINemHi(@NonNull File originalRamFile) throws IOException {
     File commandFile = new File(pinemhiFolder, "PINemHi.exe");
+    String ramName = originalRamFile.getName().toLowerCase();
 
     // make sure nvram can be found
-    if (originalNVRamFile.getName().toLowerCase().endsWith(".nv")) {
-      adjustVPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    if (originalRamFile.getName().toLowerCase().endsWith(".nv")) {
+      adjustVPPathForEmulator(originalRamFile.getParentFile(), true);
     }
-    else if (originalNVRamFile.getName().toLowerCase().endsWith(".fpram")) {
-      adjustFPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    else if (originalRamFile.getName().toLowerCase().endsWith(".fpram")) {
+      adjustFPPathForEmulator(originalRamFile.getParentFile(), true);
     }
 
-    String nvRamName = originalNVRamFile.getName().toLowerCase();
-    List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), nvRamName);
-
+    List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), ramName);
     return execute(commands, commandFile.getParentFile());
   }
 
