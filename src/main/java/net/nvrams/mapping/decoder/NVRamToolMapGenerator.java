@@ -13,8 +13,10 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.google.gson.Strictness;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.lang.Nullable;
+import org.apache.commons.lang3.Strings;
+import org.jspecify.annotations.Nullable;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -69,7 +71,7 @@ public class NVRamToolMapGenerator {
       // generate the name of the score
       String label = sc.getLabel();
       String shortLabel;
-      if (label != null && !StringUtils.equalsAnyIgnoreCase(label, "Highest Scores", "High Scores")) {
+      if (label != null && !Strings.CI.equalsAny(label, "Highest Scores", "High Scores")) {
         long occurrence = occursMap.get(label);
         label = capitalize(label);
         shortLabel = abbreviate(label);
@@ -160,7 +162,7 @@ public class NVRamToolMapGenerator {
     if (mapfile.exists()) {
       try (FileReader reader = new FileReader(mapfile)) {
         JsonReader jsonreader = new JsonReader(reader);
-        jsonreader.setLenient(true);
+        jsonreader.setStrictness(Strictness.LENIENT);
         map = (JsonObject) JsonParser.parseReader(jsonreader);
       }
     }
@@ -217,7 +219,7 @@ public class NVRamToolMapGenerator {
     try (FileWriter writer = new FileWriter(mapfile)) {
       JsonWriter jsonWriter = new JsonWriter(writer);
       jsonWriter.setIndent("  ");
-      jsonWriter.setLenient(true);
+      jsonWriter.setStrictness(Strictness.LENIENT);
       Streams.write(map, jsonWriter);
     }
   }

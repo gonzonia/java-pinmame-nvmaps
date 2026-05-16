@@ -1,6 +1,6 @@
 package net.nvrams.mapping.pinemhi.adapters;
 
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -186,7 +186,7 @@ class NVRamParserCompareTest {
   }
 
   private boolean checkScore(String rom, NVRamScore score1, NVRamScore score2, boolean ignorePosition) {
-    return StringUtils.equals(score1.getInitials(), score2.getInitials())
+    return Strings.CI.equals(score1.getInitials(), score2.getInitials())
         && (ignorePosition ? true : score1.getPosition() == score2.getPosition())
         && (score1.getScore() != null ? score1.getScore().equals(score2.getScore()) : true)
         && (score1.getScoreText() != null ? score1.getScoreText().equals(score2.getScoreText()) : true);

@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import net.nvrams.mapping.NVRamScore;
+import org.apache.commons.lang3.Strings;
 
 public class NVRamMap implements NVRamScoreDefinition {
 
@@ -72,7 +73,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     List<NVRamScore> scores = new ArrayList<>();
     String[] currentTitle = { null };
     iterate((scoreEntry, title, sectionEnabled) -> {
-        if (!StringUtils.equals(currentTitle[0], title)) {
+        if (!Strings.CI.equals(currentTitle[0], title)) {
           if (currentTitle[0] != null) {
             // read blank line
             readLine(linesIterator, "");
@@ -101,7 +102,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     List<String> raw = new ArrayList<>();
     String[] currentTitle = { null };
     iterate((scoreEntry, title, sectionEnabled) -> {
-        if (!StringUtils.equals(currentTitle[0], title)) {
+        if (!Strings.CI.equals(currentTitle[0], title)) {
           if (currentTitle[0] != null) {
             raw.add("");
           }
@@ -137,7 +138,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     switch (decoder) {
       case "leaderboard_bcd":
         for (NVRamEntry entry : entries) {
-          nbScores += scores.process(entry, StringUtils.defaultString(entry.getTitle(), "HIGHEST SCORES"), true);
+          nbScores += scores.process(entry, Objects.toString(entry.getTitle(), "HIGHEST SCORES"), true);
         }
         break;
       case "mixed_leaderboard":
@@ -172,7 +173,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     if (sc.getScore() == 0 || StringUtils.isEmpty(sc.getInitials())) {
       return false;
     }
-    return scores.stream().anyMatch(score -> Objects.equals(score.getScore(), sc.getScore()) && StringUtils.equals(score.getInitials(), sc.getInitials()));
+    return scores.stream().anyMatch(score -> Objects.equals(score.getScore(), sc.getScore()) && Strings.CI.equals(score.getInitials(), sc.getInitials()));
   }
 
   /**
@@ -182,7 +183,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     NVRamSection currentSection = null;
     for (Iterator<NVRamSection> iter = sections.iterator(); iter.hasNext();) {
       NVRamSection section = iter.next();
-      if (currentSection == null || !StringUtils.equals(currentSection.getTitle(), section.getTitle())) {
+      if (currentSection == null || !Strings.CI.equals(currentSection.getTitle(), section.getTitle())) {
         currentSection = section;
       }
       else {
@@ -197,7 +198,7 @@ public class NVRamMap implements NVRamScoreDefinition {
     if (linesIterator.hasNext()) {
       String line = linesIterator.next();
       // when expected is null, just read 
-      if (expected != null && !StringUtils.equals(line, expected)) {
+      if (expected != null && !Strings.CI.equals(line, expected)) {
         throw new RuntimeException("Wrong line '" + line + "'', expected '" + expected + "'");
       }
       return line;

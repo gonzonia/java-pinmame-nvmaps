@@ -3,8 +3,6 @@ package net.nvrams.mapping.map;
 import java.time.LocalDateTime;
 import java.util.*;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -342,7 +340,7 @@ public class NVRamMapping extends NVRamObject {
   public boolean isLittleEndian(SparseMemory memory) {
     Boolean bigEndian = memory.isBigEndian();
     String defaultEndian = (bigEndian != null && bigEndian) ? "big" : "little";
-    return "little".equals(StringUtils.defaultString(endian, defaultEndian));
+    return "little".equals(Objects.toString(endian, defaultEndian));
   }
 
   public Long getValue(SparseMemory memory) {
@@ -402,7 +400,7 @@ public class NVRamMapping extends NVRamObject {
         int bInt = b & 0xFF;
         if (charMap != null) {
           result.append(bInt < charMap.length() ? charMap.charAt(bInt) : "?");
-        } else if (bInt == 0 && !"ignore".equals(StringUtils.defaultString(nullVal, "ignore"))) {
+        } else if (bInt == 0 && !"ignore".equals(Objects.toString(nullVal, "ignore"))) {
           break;
         } else {
           result.append((char) bInt);
@@ -524,7 +522,7 @@ public class NVRamMapping extends NVRamObject {
       return String.format("%d:%02d:00", h, m);
     }
 
-    return BcdUtils.formatNumber(lv, locale) + StringUtils.defaultString(suffix);
+    return BcdUtils.formatNumber(lv, locale) + Objects.toString(suffix);
   }
 
   @SuppressWarnings("unchecked")
@@ -604,7 +602,7 @@ public class NVRamMapping extends NVRamObject {
         int bInt = b & 0xFF;
         if (charMap != null) {
           result.append(bInt < charMap.length() ? charMap.charAt(bInt) : "?");
-        } else if (bInt == 0 && !"ignore".equals(StringUtils.defaultString(nullVal, "ignore"))) {
+        } else if (bInt == 0 && !"ignore".equals(Objects.toString(nullVal, "ignore"))) {
           break;
         } else {
           result.append((char) bInt);
@@ -634,7 +632,7 @@ public class NVRamMapping extends NVRamObject {
   }
 
   public String formatLabel(String key, boolean useShortLabel) {
-    String lbl = StringUtils.defaultString(label, "?");
+    String lbl = Objects.toString(label, "?");
     if (lbl.startsWith("_")) lbl = null;
     if (useShortLabel) {
       if (shortLabel != null) {

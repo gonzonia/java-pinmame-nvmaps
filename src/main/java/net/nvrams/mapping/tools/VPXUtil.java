@@ -3,7 +3,7 @@ package net.nvrams.mapping.tools;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 import java.io.BufferedReader;
 import java.io.File;

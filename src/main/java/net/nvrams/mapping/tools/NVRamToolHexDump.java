@@ -1,17 +1,7 @@
 package net.nvrams.mapping.tools;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Formatter;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
+import java.util.*;
 
 import net.nvrams.mapping.map.BcdUtils;
 import net.nvrams.mapping.map.ChecksumMapping;
@@ -39,8 +29,9 @@ public class NVRamToolHexDump {
   private void hexDumpMemory(NVRamMap mapJson, SparseMemory memory, Appendable bld, Locale locale, NVRamRegion memoryArea) throws IOException {
     int startAddr = memoryArea != null ? BcdUtils.toInt(memoryArea.getAddress()) : 0;
     byte[] data = memory.findRegion(startAddr).data;
-    int size = ObjectUtils.defaultIfNull(memoryArea != null ? memoryArea.getSize() : null, data.length);
-    Nibble nibble = memoryArea != null? memoryArea.getNibble() : Nibble.BOTH;
+    //int size = ObjectUtils.defaultIfNull(memoryArea != null ? memoryArea.getSize() : null, data.length);
+      int size = (memoryArea != null) ? memoryArea.getSize() : data.length;
+      Nibble nibble = memoryArea != null? memoryArea.getNibble() : Nibble.BOTH;
 
     // Build offset -> mapping dictionary
     Map<Integer, Object> entryMap = new LinkedHashMap<>();
@@ -70,7 +61,7 @@ public class NVRamToolHexDump {
 
         String key = null; //TBD
         String lbl = rm.formatLabel(key, false);
-        String value = StringUtils.defaultString(rm.formatEntry(memory, locale), rm.getDefaultVal());
+        String value = Objects.toString(rm.formatEntry(memory, locale), rm.getDefaultVal());
         text = (lbl != null ? lbl + ": " : "") + value;
       } 
       else if (mappingObj instanceof NVRamScoreMapping) {

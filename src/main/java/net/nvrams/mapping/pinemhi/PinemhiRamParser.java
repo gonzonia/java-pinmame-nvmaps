@@ -19,10 +19,11 @@ import org.apache.commons.configuration2.INIConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
+import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import net.nvrams.mapping.RawScoreParser;
 import net.nvrams.mapping.RawScoreParserConf;
@@ -106,7 +107,7 @@ public class PinemhiRamParser implements NVRamParser {
     List<NVRamScore> scores = rawScoreParser.getScores(rom, lines, parseAll);
 
     // E.g. Transformers has a separate highscore list for Autobots and Decepticons, combines all scores into one list
-    if (StringUtils.equals(rom, "tf_180")) {
+    if (Strings.CI.equals(rom, "tf_180")) {
       // keep only first 10 items
       if (scores.size() > 10) {
         scores = scores.subList(0, 10);
@@ -151,7 +152,7 @@ public class PinemhiRamParser implements NVRamParser {
     List<NVRamScore> scoreList = new ArrayList<>();
     for (NVRamScore s : scores) {
       if (s.getScore() != 0 && StringUtils.isNotEmpty(s.getInitials())) {
-        if (scoreList.stream().anyMatch(score -> Objects.equals(score.getScore(), s.getScore()) && StringUtils.equals(score.getInitials(), s.getInitials()))) {
+        if (scoreList.stream().anyMatch(score -> Objects.equals(score.getScore(), s.getScore()) && Strings.CI.equals(score.getInitials(), s.getInitials()))) {
           continue;
         }
       }

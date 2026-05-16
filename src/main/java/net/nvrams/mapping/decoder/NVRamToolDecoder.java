@@ -4,21 +4,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.lang.NonNull;
+import org.apache.commons.lang3.Strings;
+import org.jspecify.annotations.NonNull;
 
 import net.nvrams.mapping.NVRamScore;
 import net.nvrams.mapping.decoder.SimpleLogger.LEVEL;
@@ -308,7 +301,7 @@ public class NVRamToolDecoder {
             }
             for (SearchResult pos : p1) {
               if (_previousResult.scorePosition + _previousResult.scoreLength + 1 == pos.scorePosition 
-                    && StringUtils.equals(sc.getLabel(), _previousScore.getLabel())) {
+                    && Strings.CI.equals(sc.getLabel(), _previousScore.getLabel())) {
                 LOG.warn("  Find a contiguous score for same regions {}, use it..", sc.getLabel());
                 return findOrContinue(filteredInitials, List.of(pos), null);
               }
@@ -344,7 +337,7 @@ public class NVRamToolDecoder {
                   // eliminate in initials and positions the ones that are not common
                   for (Iterator<Integer> it = i2.iterator(); it.hasNext();) {
                     Integer pos = it.next();
-                    if (!StringUtils.equals(decodeString(altbytes, pos, altsc.getInitials().length()), altsc.getInitials())) {
+                    if (!Strings.CI.equals(decodeString(altbytes, pos, altsc.getInitials().length()), altsc.getInitials())) {
                       it.remove();
                     }
                   }
@@ -476,7 +469,7 @@ public class NVRamToolDecoder {
 
     // group all scores by the label of the score
     Map<String, List<NVRamScore>> groupByLabel = selectedScores.keySet().stream()
-              .collect(Collectors.groupingBy(sc -> StringUtils.defaultString(sc.getLabel(), "High Scores"), Collectors.toList()));
+              .collect(Collectors.groupingBy(sc -> Objects.toString(sc.getLabel(), "High Scores"), Collectors.toList()));
 
     for (Map.Entry<String, List<NVRamScore>> e : groupByLabel.entrySet()) {
       String label = e.getKey();
@@ -738,7 +731,7 @@ public class NVRamToolDecoder {
     // table  not found by name, search in all tables by rom
     if (table == null) {
       List<VpsTable> tables = vps.getTables().stream()
-        .filter(t -> t.getRomFiles() != null && t.getRomFiles().stream().anyMatch(r -> StringUtils.equalsIgnoreCase(rom, r.getVersion())))
+        .filter(t -> t.getRomFiles() != null && t.getRomFiles().stream().anyMatch(r -> Strings.CI.equalsIgnoreCase(rom, r.getVersion())))
         .collect(Collectors.toList());
       if (tables.size() == 1) {
         table = tables.get(0);

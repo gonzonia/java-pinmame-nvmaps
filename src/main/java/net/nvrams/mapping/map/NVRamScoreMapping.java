@@ -104,7 +104,7 @@ public class NVRamScoreMapping extends NVRamObject {
   }
 
   public String formatLabel(boolean useShortLabel) {
-    String lbl = StringUtils.defaultString(label, "?");
+    String lbl = Objects.toString(label, "?");
     if (lbl.startsWith("_")) lbl = null;
     if (useShortLabel) {
       if (shortLabel != null) lbl = shortLabel;

@@ -2,7 +2,7 @@ package net.nvrams.mapping.pinemhi.adapters;
 
 import net.nvrams.mapping.RawScoreParser;
 
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

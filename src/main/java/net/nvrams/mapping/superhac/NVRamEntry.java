@@ -1,9 +1,6 @@
 package net.nvrams.mapping.superhac;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -79,7 +76,7 @@ public class NVRamEntry implements NVRamScoreDefinition {
   public NVRamScore getScore(Iterator<String> lines, String globalTitle, Locale locale) {
 
     int position = rank != null ? rank.intValue() : -1;
-    String ttle = StringUtils.defaultString(title, globalTitle);
+    String ttle = Objects.toString(title, globalTitle);
 
     // No score_offsets and no entry_decoder: plain name entry
     if (scoreOffsets == null && entryDecoder == null) {
@@ -118,7 +115,7 @@ public class NVRamEntry implements NVRamScoreDefinition {
     }
 
     int position = rank != null ? rank.intValue() : -1;
-    String ttle = StringUtils.defaultString(title, globalTitle);
+    String ttle = Objects.toString(title, globalTitle);
 
     // No score_offsets and no entry_decoder: plain name entry
     if (scoreOffsets == null && entryDecoder == null) {
@@ -132,7 +129,7 @@ public class NVRamEntry implements NVRamScoreDefinition {
 
     // Standard score entry
     List<Integer> scoreBytes = ByteDecoders.readOffsets(data, scoreOffsets, oneBased, false);
-    long decodedScore = ScoreDecoders.decodeScoreBytes(scoreBytes, StringUtils.defaultString(scoreDecoder, "bcd"), this, zeroByte, zeroIfGte);
+    long decodedScore = ScoreDecoders.decodeScoreBytes(scoreBytes, Objects.toString(scoreDecoder, "bcd"), this, zeroByte, zeroIfGte);
 
     if (skipScoreValues != null && skipScoreValues.contains(decodedScore)) {
       // Ignore the value but keep the line
@@ -140,7 +137,7 @@ public class NVRamEntry implements NVRamScoreDefinition {
     }
 
     NVRamScore sc = new NVRamScore(initials, decodedScore, position, ttle);
-    suffix = StringUtils.defaultString(suffix, getValueSuffix());
+    suffix = Objects.toString(suffix, getValueSuffix());
     sc.setSuffix(suffix);
     //parsed.valuePrefix = (String) entry.get("value_prefix");
     //parsed.valueSuffix = (String) entry.get("value_suffix");

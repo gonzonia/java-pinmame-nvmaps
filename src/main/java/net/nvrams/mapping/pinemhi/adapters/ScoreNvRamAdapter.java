@@ -2,7 +2,7 @@ package net.nvrams.mapping.pinemhi.adapters;
 
 import java.util.List;
 
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 
 public interface ScoreNvRamAdapter {
 

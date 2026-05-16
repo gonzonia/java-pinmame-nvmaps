@@ -1,13 +1,7 @@
 package net.nvrams.mapping.tools;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Formatter;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UnknownFormatConversionException;
+import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -17,6 +11,7 @@ import net.nvrams.mapping.map.NVRamMapping;
 import net.nvrams.mapping.map.NVRamMappings;
 import net.nvrams.mapping.map.NVRamScoreMapping;
 import net.nvrams.mapping.map.SparseMemory;
+import org.apache.commons.lang3.Strings;
 
 public class NVRamToolDump {
 
@@ -76,7 +71,7 @@ public class NVRamToolDump {
     String currentLabel = null;
     for (NVRamScoreMapping score : scores) {
       String lbl = score.formatLabel(false);
-      if (displayLabel && lbl != null && !StringUtils.equals(currentLabel, lbl)) {
+      if (displayLabel && lbl != null && !Strings.CI.equals(currentLabel, lbl)) {
         if (pos++ > 1) {
           bld.append(System.lineSeparator());  
         }
@@ -176,7 +171,7 @@ public class NVRamToolDump {
     String value = entry.formatEntry( memory, locale);
     String lbl = "";
     if (entryKey != null) {
-      if (value == null) value = StringUtils.defaultString(entry.getDefaultVal());
+      if (value == null) value = Objects.toString(entry.getDefaultVal());
       lbl = entry.formatLabel(entryKey, false);
     } 
     else {

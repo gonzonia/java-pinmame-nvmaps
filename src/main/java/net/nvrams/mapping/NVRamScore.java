@@ -9,6 +9,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +126,7 @@ public class NVRamScore {
     }
 
     NVRamScore score = (NVRamScore) obj;
-    return StringUtils.equals(score.getInitials(), this.getInitials())
+    return Strings.CI.equals(score.getInitials(), this.getInitials())
         && (score.getPosition() == this.getPosition())
         && (score.getScore() != null ? score.getScore().equals(this.getScore()) : true)
         && (score.getScoreText() != null ? score.getScoreText().equals(this.getScoreText()) : true);

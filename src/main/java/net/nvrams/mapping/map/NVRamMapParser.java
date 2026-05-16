@@ -5,30 +5,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Service;
+import org.apache.commons.lang3.Strings;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 import net.nvrams.mapping.NVRamParser;
 import net.nvrams.mapping.NVRamScore;
@@ -103,7 +95,7 @@ public class NVRamMapParser implements NVRamParser {
       String currentLabel = null;
       for (NVRamScoreMapping scoreDef : scoreDefs) {
         String lbl = normalize(scoreDef.formatLabel(false), locale);
-        if (!StringUtils.equals(currentLabel, lbl)) {
+        if (!Strings.CI.equals(currentLabel, lbl)) {
           currentLabel = lbl;
           // When all labels are different, do not reset position
           if (!allOnes) {
@@ -129,7 +121,7 @@ public class NVRamMapParser implements NVRamParser {
     if (sc.getScore() == 0 || StringUtils.isEmpty(sc.getInitials())) {
       return false;
     }
-    return scores.stream().anyMatch(score -> Objects.equals(score.getScore(), sc.getScore()) && StringUtils.equals(score.getInitials(), sc.getInitials()));
+    return scores.stream().anyMatch(score -> Objects.equals(score.getScore(), sc.getScore()) && Strings.CI.equals(score.getInitials(), sc.getInitials()));
   }
 
   //------------
@@ -157,7 +149,7 @@ public class NVRamMapParser implements NVRamParser {
       for (NVRamScoreMapping score : scoreDefs) {
         String lbl = normalize(score.formatLabel(false), locale);
         // new section
-        if (!StringUtils.equals(currentLabel, lbl)) {
+        if (!Strings.CI.equals(currentLabel, lbl)) {
           if (scores.size() > 0) {
             // read blank line
             readLine(linesIterator, "");
@@ -183,7 +175,7 @@ public class NVRamMapParser implements NVRamParser {
     if (linesIterator.hasNext()) {
       String line = linesIterator.next();
       // when expected is null, just read 
-      if (expected != null && !StringUtils.equals(line, expected)) {
+      if (expected != null && !Strings.CI.equals(line, expected)) {
         throw new IOException("Wrong line '" + line + "'', expected '" + expected + "'");
       }
       return line;
@@ -228,7 +220,7 @@ public class NVRamMapParser implements NVRamParser {
       String currentLabel = null;
       for (NVRamScoreMapping scoreDef : scoreDefs) {
         String lbl = normalize(scoreDef.formatLabel(false), locale);
-        if (!StringUtils.equals(currentLabel, lbl)) {
+        if (!Strings.CI.equals(currentLabel, lbl)) {
           if (raw.size() > 0) {
             raw.add("");
           }
@@ -260,7 +252,7 @@ public class NVRamMapParser implements NVRamParser {
 
   private String normalize(String lbl, Locale locale) {
     for (String ignoredLabel : ignoredLabels) {
-      if (StringUtils.containsIgnoreCase(lbl, ignoredLabel)) {
+      if (Strings.CI.contains(lbl, ignoredLabel)) {
         return "HIGHEST SCORES";
       }
     }
@@ -274,8 +266,8 @@ public class NVRamMapParser implements NVRamParser {
   }
 
   private boolean filter(String lbl) {
-    return !StringUtils.containsIgnoreCase(lbl, "BUY-IN")
-        && !StringUtils.containsIgnoreCase(lbl, "BUYIN");
+    return !Strings.CI.contains(lbl, "BUY-IN")
+        && !Strings.CI.contains(lbl, "BUYIN");
   }
 
   //--------------------------
@@ -333,8 +325,9 @@ public class NVRamMapParser implements NVRamParser {
         } else {
           end = start + c.getLength() - 1;
         }
-        int grouping = ObjectUtils.defaultIfNull(c.getGroupings(), end - start + 1);
-        while (start <= end) {
+          int grouping = Optional.ofNullable(c.getGroupings())
+                  .orElse(end - start + 1);
+          while (start <= end) {
           int entryEnd = start + grouping - 1;
           mapJson.addChecksumEntry(new ChecksumMapping(start, entryEnd, c.getChecksum(),
               c.getLabel(), is16, mapJson.isBigEndian()));
@@ -349,7 +342,7 @@ public class NVRamMapParser implements NVRamParser {
   public SparseMemory getMemory(NVRamMap mapJson, byte[] nvData) {
     NVRamRegion nvramMem = mapJson.getMemoryArea(null, "nvram");
     int base = nvramMem != null ? nvramMem.getAddress() : 0;
-    int length = ObjectUtils.defaultIfNull(nvramMem != null ? nvramMem.getSize() : null, nvData.length);
+    int length =(nvramMem != null) ? nvramMem.getSize() : nvData.length;
     if (length > nvData.length) length = nvData.length;
 
     SparseMemory memory = new SparseMemory(mapJson);
@@ -529,7 +522,7 @@ public class NVRamMapParser implements NVRamParser {
   public <T> T download(String u, ProcessStream<T> consumer) throws IOException {
     HttpURLConnection connection = null;
     try {
-      URL url = new URL(u);
+      URL url = URI.create(u).toURL();
       connection = (HttpURLConnection) url.openConnection();
       int code = connection.getResponseCode();
       if (code == 200) {
