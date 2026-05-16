@@ -7,6 +7,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -164,17 +166,33 @@ public class PinemhiRamParser implements NVRamParser {
   public List<String> executePINemHi(@NonNull File originalRamFile) throws IOException {
     File commandFile = new File(pinemhiFolder, "PINemHi.exe");
     String ramName = originalRamFile.getName().toLowerCase();
+    File tempRamFile = null;
 
-    // make sure nvram can be found
-    if (originalRamFile.getName().toLowerCase().endsWith(".nv")) {
-      adjustVPPathForEmulator(originalRamFile.getParentFile(), true);
-    }
-    else if (originalRamFile.getName().toLowerCase().endsWith(".fpram")) {
-      adjustFPPathForEmulator(originalRamFile.getParentFile(), true);
-    }
+    try {
+      // make sure nvram can be found
+      if (ramName.endsWith(".nv")) {
+        adjustVPPathForEmulator(originalRamFile.getParentFile(), true);
+      }
+      else if (ramName.endsWith(".fpram")) {
+        adjustFPPathForEmulator(originalRamFile.getParentFile(), true);
 
-    List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), ramName);
-    return execute(commands, commandFile.getParentFile());
+        // pinemhi cannot handle filenames with whitespace; create a temp copy with a sanitized name
+        if (ramName.contains(" ")) {
+          String tempName = ramName.replaceAll("\\s+", "");
+          tempRamFile = new File(originalRamFile.getParentFile(), tempName);
+          Files.copy(originalRamFile.toPath(), tempRamFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          ramName = tempName;
+        }
+      }
+
+      List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), ramName);
+      return execute(commands, commandFile.getParentFile());
+    }
+    finally {
+      if (tempRamFile != null && tempRamFile.exists()) {
+        tempRamFile.delete();
+      }
+    }
   }
 
   private List<String> execute(List<String> commands, File dir) throws IOException {
