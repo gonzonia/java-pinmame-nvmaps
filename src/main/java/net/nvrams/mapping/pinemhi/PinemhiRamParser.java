@@ -105,6 +105,10 @@ public class PinemhiRamParser implements NVRamParser {
 
   @Override
   public List<NVRamScore> parseRaw(String rom, List<String> lines, Locale locale, boolean parseAll) throws IOException {
+    if (lines.size() >= 2) {
+      lines.set(1, lines.get(1).replaceAll("\\.\\.\\.", "???"));
+    }
+
     List<NVRamScore> scores = rawScoreParser.getScores(rom, lines, parseAll);
 
     // E.g. Transformers has a separate highscore list for Autobots and Decepticons, combines all scores into one list

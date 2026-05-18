@@ -30,11 +30,15 @@ public class PinemhiRamParserTest extends BaseParserTest {
 
   @Test
   public void testPinemhiExtractFPRam() throws IOException {
-    String rom = "Jaws";
+    String rom = "Avatar_3.0,_Rotated_Display";
     File nvram = new File("fprams", rom + ".fpRAM");
 
     List<String> lines = parser.executePINemHi(nvram);
-    assertEquals(5, lines.size());
+    assertEquals(2, lines.size());
+
+//    List<String> raw = parser.getRaw(rom, nvram, Locale.getDefault());
+//    List<NVRamScore> nvRamScores = parser.parseRaw(rom, raw, Locale.GERMANY, true);
+//    assertEquals(1, nvRamScores);
   }
 
 
