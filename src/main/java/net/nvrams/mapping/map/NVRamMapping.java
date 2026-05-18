@@ -522,7 +522,7 @@ public class NVRamMapping extends NVRamObject {
       return String.format("%d:%02d:00", h, m);
     }
 
-    return BcdUtils.formatNumber(lv, locale) + Objects.toString(suffix);
+    return BcdUtils.formatNumber(lv, locale) + Objects.toString(suffix,"");
   }
 
   @SuppressWarnings("unchecked")
