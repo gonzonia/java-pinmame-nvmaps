@@ -7,6 +7,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -104,6 +106,10 @@ public class PinemhiRamParser implements NVRamParser {
 
   @Override
   public List<NVRamScore> parseRaw(String rom, List<String> lines, Locale locale, boolean parseAll) throws IOException {
+    if (lines.size() >= 2) {
+      lines.set(1, lines.get(1).replaceAll("\\.\\.\\.", "???"));
+    }
+
     List<NVRamScore> scores = rawScoreParser.getScores(rom, lines, parseAll);
 
     // E.g. Transformers has a separate highscore list for Autobots and Decepticons, combines all scores into one list
@@ -124,25 +130,24 @@ public class PinemhiRamParser implements NVRamParser {
 
 
   @Override
-  public List<String> getRaw(String rom, @NonNull File nvRam, Locale locale) throws IOException {
-
-    File originalNVRamFile = nvRam;
-    String nvRamFileName = nvRam.getCanonicalFile().getName().toLowerCase();
-    String nvRamName = FilenameUtils.getBaseName(nvRamFileName).toLowerCase();
-    if (nvRamFileName.contains(" ")) {
-      LOG.info("Stripping NV offset from nvram file \"{}\" to check if supported.", nvRamFileName);
-      nvRamName = nvRamFileName.substring(0, nvRamFileName.indexOf(" "));
+  public List<String> getRaw(String rom, @NonNull File ramFile, Locale locale) throws IOException {
+    File originalRamFile = ramFile;
+    String ramFileName = ramFile.getCanonicalFile().getName().toLowerCase();
+    String ramName = FilenameUtils.getBaseName(ramFileName).toLowerCase();
+    if (ramFileName.contains(" ") && ramName.endsWith(".nv")) {
+      LOG.info("Stripping NV offset from nvram file \"{}\" to check if supported.", ramFileName);
+      ramName = ramFileName.substring(0, ramFileName.indexOf(" "));
 
       //rename the original nvram file so that we can parse with the original name
-      originalNVRamFile = new File(nvRam.getParentFile(), nvRamName + ".nv");
+      originalRamFile = new File(ramFile.getParentFile(), ramName + ".nv");
     }
 
-    List<String> lines = executePINemHi(originalNVRamFile);
+    List<String> lines = executePINemHi(originalRamFile);
 
     for (ScoreNvRamAdapter adapter : adapters) {
-      if (adapter.isApplicable(nvRamFileName, lines)) {
+      if (adapter.isApplicable(ramFileName, lines)) {
         LOG.info("Converted score using {}", adapter.getClass().getSimpleName());
-        return adapter.convert(nvRamFileName, lines);
+        return adapter.convert(ramFileName, lines);
       }
     }
     return lines;
@@ -163,21 +168,36 @@ public class PinemhiRamParser implements NVRamParser {
 
 
   @Nullable
-  public List<String> executePINemHi(@NonNull File originalNVRamFile) throws IOException {
+  public List<String> executePINemHi(@NonNull File originalRamFile) throws IOException {
     File commandFile = new File(pinemhiFolder, "PINemHi.exe");
+    String ramName = originalRamFile.getName().toLowerCase();
+    File tempRamFile = null;
 
-    // make sure nvram can be found
-    if (originalNVRamFile.getName().toLowerCase().endsWith(".nv")) {
-      adjustVPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    try {
+      // make sure nvram can be found
+      if (ramName.endsWith(".nv")) {
+        adjustVPPathForEmulator(originalRamFile.getParentFile(), true);
+      }
+      else if (ramName.endsWith(".fpram")) {
+        adjustFPPathForEmulator(originalRamFile.getParentFile(), true);
+
+        // pinemhi cannot handle filenames with whitespace; create a temp copy with a sanitized name
+        if (ramName.contains(" ")) {
+          String tempName = ramName.replaceAll("\\s+", "");
+          tempRamFile = new File(originalRamFile.getParentFile(), tempName);
+          Files.copy(originalRamFile.toPath(), tempRamFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+          ramName = tempName;
+        }
+      }
+
+      List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), ramName);
+      return execute(commands, commandFile.getParentFile());
     }
-    else if (originalNVRamFile.getName().toLowerCase().endsWith(".fpram")) {
-      adjustFPPathForEmulator(originalNVRamFile.getParentFile(), true);
+    finally {
+      if (tempRamFile != null && tempRamFile.exists()) {
+        tempRamFile.delete();
+      }
     }
-
-    String nvRamName = originalNVRamFile.getName().toLowerCase();
-    List<String> commands = Arrays.asList("cmd.exe", "/c", commandFile.getName(), nvRamName);
-
-    return execute(commands, commandFile.getParentFile());
   }
 
   private List<String> execute(List<String> commands, File dir) throws IOException {

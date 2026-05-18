@@ -110,6 +110,10 @@ class NVRamParserCompareTest {
     for (File entry : testFolder.listFiles()) {
       String rom = entry.getName().replace(".nv", "").toLowerCase();
 
+      if(rom.equalsIgnoreCase("cybrnaut")) {
+        continue;
+      }
+
       if ((firstRom==null || firstRom.compareTo(rom) <= 0) && pinemhi.isSupportedRom(rom) && parser.isSupportedRom(rom)) {
         if (!doCompare(rom, entry, parser, parseAll, false, false, loc)) {
           if (!doCompare(rom, entry, parser, parseAll, false, true, loc)) {

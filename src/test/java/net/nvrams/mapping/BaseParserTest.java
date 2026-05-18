@@ -75,7 +75,7 @@ public class BaseParserTest {
     String rom = entry.getName().replace(".nv", "").replace(".fpRAM", "");
 
 
-    if(rom.equalsIgnoreCase("cybrnaut")) {
+    if (rom.equalsIgnoreCase("cybrnaut")) {
       return status;
     }
 
@@ -112,6 +112,10 @@ public class BaseParserTest {
     }
 
     File listFile = new File("nvramslist", entry.getName() + ".list");
+    if (!nvRam) {
+      listFile = new File("fpramslist", entry.getName() + ".list");
+    }
+
     if (listFile.exists()) {
       // compare with test output
       String fileContents = Files.readString(listFile.toPath(), StandardCharsets.UTF_8);
