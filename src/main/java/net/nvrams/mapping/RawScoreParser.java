@@ -1,6 +1,7 @@
 package net.nvrams.mapping;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -17,6 +18,8 @@ import org.jspecify.annotations.Nullable;
  */
 public class RawScoreParser {
   private final static Logger LOG = LoggerFactory.getLogger(RawScoreParser.class);
+
+  private static final List<String> IGNORED_TITLES = Arrays.asList("REPLAY SCORE", "REPLAY");
 
   private List<String> titles;
 
@@ -38,50 +41,54 @@ public class RawScoreParser {
 	    String currentTitle = null;
       String currentSuffix = null;
       NVRamScore currentScore = null;
-      for (int i = 0; i < lines.size(); i++) {
-        String line = lines.get(i).trim();
-      	if (StringUtils.isEmpty(line)) {
-          if (currentSuffix != null && currentScore != null) {
-            currentScore.setSuffix(currentSuffix);
-          }
-        	// restart a possible new sequence
-        	currentTitle = null;
-          currentSuffix = null;
-          currentScore = null;
-        	if (parseAll || skipTitlesCheckFor.contains(rom) || scores.size() < 3) {
-            continue;
-          }
-          else {
-            // stop the parsing
-            break;
-          }
-      	}
-
-        if (currentTitle != null && isScoreLine(line)) {
-          currentScore = createScore(currentTitle, line);
-          if (currentScore != null) {
-            scores.add(currentScore);
-          }
-        }
-        else if (currentTitle != null && isTitleScoreLine(line)) {
-          currentScore = createTitledScore(currentTitle, line);
-          if (currentScore != null) {
-            if (parseAll || skipTitlesCheckFor.contains(rom) || titles.contains(currentTitle)) {
-              scores.add(currentScore);
+        for (String s : lines) {
+            String line = s.trim();
+            if (StringUtils.isEmpty(line)) {
+                if (currentSuffix != null && currentScore != null) {
+                    currentScore.setSuffix(currentSuffix);
+                }
+                // restart a possible new sequence
+                currentTitle = null;
+                currentSuffix = null;
+                currentScore = null;
+                if (parseAll || skipTitlesCheckFor.contains(rom) || scores.size() < 3) {
+                    continue;
+                } else {
+                    // stop the parsing
+                    break;
+                }
             }
-          }
+
+            if (currentTitle != null && isScoreLine(line)) {
+                //Check for Titles that we know aren't actually scores
+                if (IGNORED_TITLES.contains(currentTitle.toUpperCase().trim())) {
+                    continue;
+                }
+                currentScore = createScore(currentTitle, line);
+                if (currentScore != null) {
+                    scores.add(currentScore);
+                }
+            } else if (currentTitle != null && isTitleScoreLine(line)) {
+                //Check for Titles that we know aren't actually scores
+                if (IGNORED_TITLES.contains(currentTitle.toUpperCase().trim())) {
+                    continue;
+                }
+                currentScore = createTitledScore(currentTitle, line);
+                if (currentScore != null) {
+                    if (parseAll || skipTitlesCheckFor.contains(rom) || titles.contains(currentTitle)) {
+                        scores.add(currentScore);
+                    }
+                }
+            } else if (currentTitle != null && StringUtils.isNotEmpty(line)) {
+                if (currentScore != null) {
+                    currentSuffix = " " + line;
+                } else {
+                    currentTitle += " " + line;
+                }
+            } else if (StringUtils.isNotEmpty(line)) {
+                currentTitle = line;
+            }
         }
-        else if (currentTitle != null && StringUtils.isNotEmpty(line)) {
-          if (currentScore != null) {
-            currentSuffix = " " + line;
-          } else {
-            currentTitle += " " + line;
-          }
-        }
-        else if (StringUtils.isNotEmpty(line)) {
-          currentTitle = line;
-        }
-      }
       if (currentSuffix != null && currentScore != null) {
         currentScore.setSuffix(currentSuffix);
       }
@@ -101,8 +108,8 @@ public class RawScoreParser {
   //-------------------------
 
   private static final String _patternIndex = "(\\d+\\)|#\\d+|\\d+#|\\d+,|\\d+\\.:) +";
-  private static final String _patternScore = "([ ?/+\\-a-zA-Z0-9\u0000]{3,}\\s+)?(?:[-|$]?\\s+)?(\\d\\d?\\d?(?:[.,?\u00a0\u202f\ufffd\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
-
+    private static final String _patternScore ="([ ?/+\\-a-zA-Z0-9\u0000]{3,}?\\s+)?(?:[-|$]?\\s+)?(\\d\\d?\\d?(?:[.,? \u00a0\u202f\ufffd\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
+//  private static final String _patternScore = "([ ?/+\\-a-zA-Z0-9\u0000]{3,}\\s+)?(?:[-|$]?\\s+)?(\\d\\d?\\d?(?:[.,?\u00a0\u202f\ufffd\u00ff]?\\d\\d\\d)*(?:\\.\\d)?)((?:\\s\\d+)?[\\-\\sa-zA-Z]*)$";
   private static final Pattern patternScoreLine = Pattern.compile("^" + _patternIndex + _patternScore);
   private static final Pattern patternScoreTitle = Pattern.compile("^" + _patternScore);
 
@@ -137,9 +144,9 @@ public class RawScoreParser {
         sc.setLabel(title);
         sc.setRawScore(line);
 
-        // do not trim and keep spaces at beginning if present
-        String suffix = StringUtils.trim(m.group(3));
-        if (StringUtils.isNotEmpty(suffix)) {
+          // do not trim and keep spaces at beginning if present
+          String suffix = m.group(3) != null ? m.group(3).stripTrailing() : null;
+          if (StringUtils.isNotEmpty(suffix)) {
           sc.setSuffix(suffix);
         }
         return sc;
